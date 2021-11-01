@@ -1,0 +1,9 @@
+var nope = .
+var b = d
+var x = 100
+var y = 3.14
+var z = cmd(0)
+
+var h = ""
+
+var p =

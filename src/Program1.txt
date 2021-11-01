@@ -1,0 +1,16 @@
+var x = cmd(0)
+var y = cmd(1)
+var m = cmd(2)
+var count = 0
+
+from var i = 0 to m increment by 1
+    if i mod x equals 0 then
+        count = count + 1
+    if i mod y equals 0 then
+        count = count + 1
+    var num = x mult y
+    if i mod num equals 0 then
+        count = count - 1
+end from loop
+
+output(count)

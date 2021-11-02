@@ -12,6 +12,7 @@ public class Translator {
 
     private static Scanner scanner;
     HashMap<String, Integer> integerVariables = new HashMap<String, Integer>();
+    HashMap<String,Data> variableMap = new HashMap<>();
 
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -49,6 +50,9 @@ public class Translator {
      * @param line
      */
     private static void addVariable(String line){
+        // maybe split at "=" so we can ingnore white space
+
+
         Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
         Matcher integerMatcher = integerPattern.matcher(line);
 
@@ -57,6 +61,7 @@ public class Translator {
 
         Pattern commandLinePattern = Pattern.compile("var (.+) = cmd\\((\\d+)\\)");
         Matcher commandLineMatcher = commandLinePattern.matcher(line);
+
 
         if(integerMatcher.matches()){
             System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));

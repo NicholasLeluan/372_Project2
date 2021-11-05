@@ -16,6 +16,7 @@ public class Translator {
 
     private static Scanner scanner;
     HashMap<String, Integer> integerVariables = new HashMap<String, Integer>();
+    HashMap<String,Data> variableMap = new HashMap<>();
 
 
     public static void main(String[] args) throws IOException {
@@ -60,7 +61,11 @@ public class Translator {
      * @param line
      * @throws IOException 
      */
+
     private static void addVariable(String line) throws IOException{
+
+        // maybe split at "=" so we can ingnore white space
+
         Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
         Matcher integerMatcher = integerPattern.matcher(line);
         
@@ -69,6 +74,7 @@ public class Translator {
 
         Pattern commandLinePattern = Pattern.compile("var (.+) = cmd\\((\\d+)\\)");
         Matcher commandLineMatcher = commandLinePattern.matcher(line);
+
 
         if(integerMatcher.matches()){
         	f.write("\t\tint " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");

@@ -21,11 +21,8 @@ public class Translator {
     public static void main(String[] args) throws IOException {
     	//creates java file
     	f = new FileWriter("Test3.java");
-    	
-    	f.write("int t = 0;\n");
-    	//f.close();
-    	
-    	
+    	f.write("public class Test3 {\n");
+    	f.write("\tpublic static void main(String[] args){\n");
     	
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
         // we will read the file
@@ -44,6 +41,8 @@ public class Translator {
                 addVariable(line);
             }
         }
+        f.write("\t}\n");
+        f.write("}");
         f.close();
     }
 
@@ -72,7 +71,8 @@ public class Translator {
         Matcher commandLineMatcher = commandLinePattern.matcher(line);
 
         if(integerMatcher.matches()){
-        	f.write("int " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
+        	f.write("\t\tint " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
+        	f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
             System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));
         }else if(realsMatcher.matches()){
             System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));

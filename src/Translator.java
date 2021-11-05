@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 
 public class Translator {
+	//what did i do?
 	static FileWriter f = null;
 
     private static Scanner scanner;

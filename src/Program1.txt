@@ -1,3 +1,5 @@
+var x = 7
+var y = 2
 var x = cmd(0)
 var y = cmd(1)
 var m = cmd(2)

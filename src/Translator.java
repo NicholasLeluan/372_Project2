@@ -1,5 +1,10 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -7,15 +12,21 @@ import java.util.regex.Pattern;
 
 
 public class Translator {
-	
-	
+	static FileWriter f = null;
 
     private static Scanner scanner;
     HashMap<String, Integer> integerVariables = new HashMap<String, Integer>();
 
 
-    public static void main(String[] args) throws FileNotFoundException {
-
+    public static void main(String[] args) throws IOException {
+    	//creates java file
+    	f = new FileWriter("Test3.java");
+    	
+    	f.write("int t = 0;\n");
+    	//f.close();
+    	
+    	
+    	
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
         // we will read the file
         // for each line -> read the "header" words that indicate what the statement is
@@ -33,6 +44,7 @@ public class Translator {
                 addVariable(line);
             }
         }
+        f.close();
     }
 
     /**
@@ -47,11 +59,12 @@ public class Translator {
      *  - varible assingment is made when variable was already declared (i.e. the map already has
      *  the variable)
      * @param line
+     * @throws IOException 
      */
-    private static void addVariable(String line){
+    private static void addVariable(String line) throws IOException{
         Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
         Matcher integerMatcher = integerPattern.matcher(line);
-
+        
         Pattern realsPattern = Pattern.compile("var (.+) = (\\d+\\.\\d+)");
         Matcher realsMatcher = realsPattern.matcher(line);
 
@@ -59,6 +72,7 @@ public class Translator {
         Matcher commandLineMatcher = commandLinePattern.matcher(line);
 
         if(integerMatcher.matches()){
+        	f.write("int " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
             System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));
         }else if(realsMatcher.matches()){
             System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));

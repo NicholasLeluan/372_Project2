@@ -12,7 +12,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 //need help with how to write a cla to a java file - T
-//how to match with negative numbers? -T
+//how to match with negative numbers? 
+//can int mod real be allowed?
 
 
 public class Translator {
@@ -22,6 +23,7 @@ public class Translator {
     HashMap<String, Integer> integerVariables = new HashMap<String, Integer>();
     HashMap<String,Data> variableMap = new HashMap<>();
     static ArrayList<String> keywords = new ArrayList<String>();
+    static ArrayList<String> variables = new ArrayList<String>();
 
     public static void main(String[] args) throws IOException {
     	//@Nick - dont cringe its good enough for now lol
@@ -132,7 +134,7 @@ public class Translator {
         	if (keywords.contains(integerMatcher.group(1))) {
         		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
         	}
-        	
+        	variables.add(integerMatcher.group(1));
         	f.write("\t\tint " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
         	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
         	
@@ -142,7 +144,7 @@ public class Translator {
         	if (keywords.contains(realsMatcher.group(1))) {
         		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
         	}
-        	
+        	variables.add(integerMatcher.group(1));
         	f.write("\t\tdouble " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
         	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
         	
@@ -150,9 +152,9 @@ public class Translator {
             
         }else if(addPatternMatcher.matches()){ //matches add
         	//what is this adding to though??????
-        	f.write(integerMatcher.group(0) + " + " + integerMatcher.group(2)+ ";\n");
+        	f.write(addPatternMatcher.group(0) + " + " + addPatternMatcher.group(2)+ ";\n");
         	
-            System.out.println(String.format("Matched %s with ADD",integerMatcher.group(1)));
+            System.out.println(String.format("Matched %s with ADD",addPatternMatcher.group(1)));
             
         }else if(commandLineMatcher.matches()){ //matches cla
         	if (keywords.contains(commandLineMatcher.group(1))) {
@@ -167,7 +169,6 @@ public class Translator {
         	//TODO Error messgage!!!!!!!!!!!!!!!!!!!!
             System.out.println("Did not match, likely throw an error here");
         }
-
 
     }
 

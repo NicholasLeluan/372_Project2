@@ -8,10 +8,13 @@ if x greater than 0 then
             flag = true
             stop loop now
     end
+end
 
     if flag equals true then
         output("not prime")
     or
         output("prime")
+    end
 or
     output("not prime")
+end

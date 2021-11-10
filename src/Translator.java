@@ -59,9 +59,11 @@ public class Translator {
     	
     	
     	//creates java file
+        // Test3 will be the name of file being run which SHOULD be the 0th command line argument
     	f = new FileWriter("Test3.java");
     	f.write("public class Test3 {\n");
     	f.write("\tpublic static void main(String[] args){\n");
+    	// gets added to from what we read
     	
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
         // we will read the file
@@ -101,7 +103,6 @@ public class Translator {
      */
 
     private static void addVariable(String line) throws IOException{
-
         // maybe split at "=" so we can ingnore white space
 
         Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
@@ -109,10 +110,16 @@ public class Translator {
         
         Pattern realsPattern = Pattern.compile("var (.+) = (\\d+\\.\\d+)");
         Matcher realsMatcher = realsPattern.matcher(line);
+
+        Pattern isReal = Pattern.compile("(\\d+\\.\\d+)");
+
         
         //not sure on these
-        Pattern addPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+        Pattern addPattern = Pattern.compile("var (.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
         Matcher addPatternMatcher = addPattern.matcher(line);
+
+        Pattern addPattern1 = Pattern.compile("(.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+        Matcher addPattern1Matcher = addPattern1.matcher(line);
         
         Pattern subPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) sub ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
         Matcher subPatternMatcher = subPattern.matcher(line);
@@ -142,21 +149,35 @@ public class Translator {
 
         }else if(realsMatcher.matches()){ //matches reals
         	if (keywords.contains(realsMatcher.group(1))) {
-        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
+        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!! variable is a keyword
         	}
         	variables.add(integerMatcher.group(1));
         	f.write("\t\tdouble " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
         	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
 
             System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));
-            
+        // creating a variable with an add expression
         }else if(addPatternMatcher.matches()){ //matches add
         	//what is this adding to though??????
         	f.write(addPatternMatcher.group(0) + " + " + addPatternMatcher.group(2)+ ";\n");
         	
             System.out.println(String.format("Matched %s with ADD",addPatternMatcher.group(1)));
-            
-        }else if(commandLineMatcher.matches()){ //matches cla
+        // taking an already defined variable; assigning it to the add expression
+        }else if (addPattern1Matcher.matches()){
+            if(variables.contains(addPattern1Matcher.group(0))){
+                Matcher val1 = isReal.matcher(addPattern1Matcher.group(1));
+                Matcher val2 = isReal.matcher(addPattern1Matcher.group(2));
+                if (val1.matches() || val2.matches()){
+                    f.write("double "+ addPattern1Matcher.group(0) + " = " + addPattern1Matcher.group(1) + " + " + addPattern1Matcher.group(2)+";\n");
+                }else{
+                    f.write("int "+ addPattern1Matcher.group(0) + " = " + addPattern1Matcher.group(1) + " + " + addPattern1Matcher.group(2)+";\n");
+                }
+            }else{
+                // TODO: THROW VARIABLE NOT FOUND ERROR!!!!!!!!!!!!!!!
+                System.out.println("THIS IS AN ERROR; variable has not been created");
+            }
+        }
+        else if(commandLineMatcher.matches()){ //matches cla
         	if (keywords.contains(commandLineMatcher.group(1))) {
         		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
         	}

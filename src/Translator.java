@@ -139,11 +139,6 @@ public class Translator {
         	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
         	
             System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));
-<<<<<<< HEAD
-            // write to file : int [var] = [val];
-        }else if(realsMatcher.matches()){
-=======
-            
         }else if(realsMatcher.matches()){ //matches reals
         	if (keywords.contains(realsMatcher.group(1))) {
         		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
@@ -151,8 +146,7 @@ public class Translator {
         	variables.add(integerMatcher.group(1));
         	f.write("\t\tdouble " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
         	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
-        	
->>>>>>> bae06e47352c40b620b3f3395134c763f7a4112f
+
             System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));
             
         }else if(addPatternMatcher.matches()){ //matches add

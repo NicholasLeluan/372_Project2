@@ -1,2 +1,17 @@
-var x = 7
-var y = 2
+var x = cmd(0)
+var half = x / 2
+var flag = false
+
+if x greater than 0 then
+    from var i to half increment by 1
+        if x mod i equals 0
+            flag = true
+            stop loop now
+    end
+
+    if flag equals true then
+        output("not prime")
+    or
+        output("prime")
+or
+    output("not prime")

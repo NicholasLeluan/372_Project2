@@ -63,6 +63,7 @@ public class Translator {
 
         if(integerMatcher.matches()){
             System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));
+            // write to file : int [var] = [val];
         }else if(realsMatcher.matches()){
             System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));
         }else if(commandLineMatcher.matches()){

@@ -64,27 +64,49 @@ public class Translator {
     	f.write("public class Test3 {\n");
     	f.write("\tpublic static void main(String[] args){\n");
     	// gets added to from what we read
-    	
+
+        // Pattern for variable assignment
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
+
+        // Pattern for if statements; will start with if, end with 'end'
+        Pattern ifStatementPattern = Pattern.compile("^(if)");
+
+
         // we will read the file
         // for each line -> read the "header" words that indicate what the statement is
         // based on the context call certain methods for parsing
         // if line[0] == var
 
         File file = new File(args[0]);
-        System.out.println(String.format("OPENED FILE:: %s\n",args[0]));
+        System.out.println(String.format("OPENED FILE:: %s",args[0]));
         scanner = new Scanner(file);
+        int lineNo = 1;
+        int openIfs = 0; //used as flag to determine correct if formatting
         while (scanner.hasNext()){
             String line = scanner.nextLine();
             Matcher variableAssignment = variableAssignmentPattern.matcher(line);
+            Matcher ifStatement = ifStatementPattern.matcher(line);
             // if the read in line is a variable assignment call the variableAssignment method
             if (variableAssignment.matches()){
                 addVariable(line);
+            }else if(line.trim().startsWith("if")){
+                System.out.println("IF OUT IN MAIN:: " + ifStatement(line));
+                f.write(ifStatement(line)+"\n");
+                openIfs += 1;
+            }else if(line.trim().equals("end if")){
+                f.write("}\n");
+                openIfs -=1;
             }
+            lineNo++;
         }
-        f.write("\t}\n");
-        f.write("}");
-        f.close();
+        if (openIfs > 0){
+            /// TODO:: IF FORMATTING ERROR
+            // will probably need the same for the loops
+        }else{
+            f.write("\t}\n");
+            f.write("}");
+            f.close();
+        }
     }
 
     /**
@@ -101,7 +123,6 @@ public class Translator {
      * @param line
      * @throws IOException 
      */
-
     private static void addVariable(String line) throws IOException{
         // maybe split at "=" so we can ingnore white space
 
@@ -113,7 +134,6 @@ public class Translator {
 
         Pattern isReal = Pattern.compile("(\\d+\\.\\d+)");
 
-        
         //not sure on these
         Pattern addPattern = Pattern.compile("var (.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
         Matcher addPatternMatcher = addPattern.matcher(line);
@@ -190,6 +210,111 @@ public class Translator {
         	//TODO Error messgage!!!!!!!!!!!!!!!!!!!!
             System.out.println("Did not match, likely throw an error here");
         }
+
+    }
+
+    private static String ifStatement(String line){
+        String retVal = "if (";
+        Pattern extractConditional = Pattern.compile("if (.*) then");
+        Matcher formatCheck = extractConditional.matcher(line.trim());
+        if(formatCheck.matches()){
+            retVal += conditionalStatement(formatCheck.group(1));
+        }else{
+            System.out.println("ERROR:"+line.trim());
+        }
+
+        retVal += "){";
+        return retVal;
+    }
+
+    /**
+     * Method that is called when either a conditional statement is expected or
+     * needed to be extracted;
+     * @param line String value that should contain a valid matching conditional statement
+     * @return String value of the built Java translation of the conditional
+     */
+    private static String conditionalStatement(String line){
+        // GREATER THAN OR EQUAL TO
+        Pattern condGTOE = Pattern.compile("(.*) greater than or equal to (.*)");
+        Matcher matcherGTOE = condGTOE.matcher(line.trim());
+        // GREATER THAN
+        Pattern condGT = Pattern.compile("(.*) greater than (.*)");
+        Matcher matcherGT = condGT.matcher(line.trim());
+        // LESS THAN OR EQUAL TO
+        Pattern condLTOE = Pattern.compile("(.*) less than or equal to (.*)");
+        Matcher matcherLTOE = condLTOE.matcher(line.trim());
+        // LESS THAN
+        Pattern condLT = Pattern.compile("(.*) less than (.*)");
+        Matcher matcherLT = condLT.matcher(line.trim());
+        // EQUAL TO
+        Pattern condEql = Pattern.compile("(.*) equals (.*)");
+        Matcher matcherEql = condEql.matcher(line.trim());
+        //NOT EQUAL TO
+        Pattern condNotEql = Pattern.compile("(.*) not equal to (.*)");
+        Matcher matcherNotEql = condNotEql.matcher(line.trim());
+
+        if(matcherGTOE.matches()){
+            return String.format("%s >= %s",
+                    expression(matcherGTOE.group(1)),expression(matcherGTOE.group(2)));
+        }else if(matcherGT.matches()){
+            return String.format("%s > %s",
+                    expression(matcherGT.group(1)),expression(matcherGT.group(2)));
+        }else if(matcherLTOE.matches()){
+            return String.format("%s <= %s",
+                    expression(matcherLTOE.group(1)),expression(matcherLTOE.group(2)));
+        }else if(matcherLT.matches()){
+            return String.format("%s < %s",
+                    expression(matcherLT.group(1)),expression(matcherLT.group(2)));
+        }else if(matcherEql.matches()){
+            return String.format("%s == %s",
+                    expression(matcherEql.group(1)),expression(matcherEql.group(2)));
+        }else if(matcherNotEql.matches()){
+            return String.format("%s != %s",
+                    expression(matcherNotEql.group(1)),expression(matcherNotEql.group(2)));
+        }
+        //TODO::
+        System.out.println("DID NOT MATCH IN CONDITIONAL; THROW ERROR");
+        return null;
+    }
+
+    /**
+     * Reduces a given string to a simple expression; can perform the singleton
+     * @param expr
+     */
+    private static String expression(String expr){
+        Pattern addPattern = Pattern.compile("(.*) add (.*)");
+        Matcher addPatternMatcher = addPattern.matcher(expr);
+
+        Pattern subPattern = Pattern.compile("(.*) sub (.*)");
+        Matcher subPatternMatcher = subPattern.matcher(expr);
+
+        Pattern multPattern = Pattern.compile("(.*) mult (.*)");
+        Matcher multPatternMatcher = multPattern.matcher(expr);
+
+        Pattern divPattern = Pattern.compile("(.*) div (.*)");
+        Matcher divPatternMatcher = divPattern.matcher(expr);
+
+        Pattern modPattern = Pattern.compile("(.*) mod (.*)");
+        Matcher modPatternMatcher = modPattern.matcher(expr);
+
+        Pattern singletonPattern = Pattern.compile("(.*)");
+        Matcher singletonPatternMatcher = singletonPattern.matcher(expr);
+
+        // maybe add logic within the if statements checking for int/float expressions
+        if(addPatternMatcher.matches()){
+            return String.format("%s + %s",addPatternMatcher.group(1),addPatternMatcher.group(2));
+        }else if(subPatternMatcher.matches()){
+            return String.format("%s - %s",subPatternMatcher.group(1),subPatternMatcher.group(2));
+        }else if(multPatternMatcher.matches()){
+            return String.format("%s * %s",multPatternMatcher.group(1),multPatternMatcher.group(2));
+        }else if(divPatternMatcher.matches()){
+            return String.format("%s / %s",divPatternMatcher.group(1),divPatternMatcher.group(2));
+        }else if(modPatternMatcher.matches()){
+            return String.format("%s - %s",modPatternMatcher.group(1),modPatternMatcher.group(2));
+        }else if(singletonPatternMatcher.matches()){
+            return String.format("%s",singletonPatternMatcher.group(1));
+        }
+        return null;
 
     }
 

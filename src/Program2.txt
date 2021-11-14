@@ -4,17 +4,17 @@ var flag = false
 
 if x greater than 0 then
     from var i to half increment by 1
-        if x mod i equals 0
+        if x mod i equals 0 then
             flag = true
             stop loop now
+        end if
     end
-end
 
     if flag equals true then
         output("not prime")
     or
         output("prime")
-    end
+    end if
 or
     output("not prime")
-end
+end if

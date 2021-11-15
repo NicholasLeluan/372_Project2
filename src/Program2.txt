@@ -1,5 +1,5 @@
 var x = cmd(0)
-var half = x / 2
+var half = x div 2
 var flag = false
 
 if x greater than 0 then

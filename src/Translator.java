@@ -68,6 +68,9 @@ public class Translator {
         // Pattern for variable assignment
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
 
+        //
+        Pattern existingVariableAssignmentPattern = Pattern.compile("(.+) = (.*)");
+
         // Pattern for if statements; will start with if, end with 'end'
         Pattern ifStatementPattern = Pattern.compile("^(if)");
 
@@ -84,13 +87,15 @@ public class Translator {
         int openIfs = 0; //used as flag to determine correct if formatting
         while (scanner.hasNext()){
             String line = scanner.nextLine();
-            Matcher variableAssignment = variableAssignmentPattern.matcher(line);
-            Matcher ifStatement = ifStatementPattern.matcher(line);
+            Matcher newVariableAssignment = variableAssignmentPattern.matcher(line);
+            Matcher oldVariableAssignment = existingVariableAssignmentPattern.matcher(line);
+            //Matcher ifStatement = ifStatementPattern.matcher(line);
             // if the read in line is a variable assignment call the variableAssignment method
-            if (variableAssignment.matches()){
-                addVariable(line);
+            if (newVariableAssignment.matches() || oldVariableAssignment.matches()){
+                //System.out.println("ADD VARIABLE::"+addVariable(line));
+                f.write(addVariable(line));
             }else if(line.trim().startsWith("if")){
-                System.out.println("IF OUT IN MAIN:: " + ifStatement(line));
+                //System.out.println("IF OUT IN MAIN:: " + ifStatement(line));
                 f.write(ifStatement(line)+"\n");
                 openIfs += 1;
             }else if(line.trim().equals("end if")){
@@ -103,7 +108,7 @@ public class Translator {
             /// TODO:: IF FORMATTING ERROR
             // will probably need the same for the loops
         }else{
-            f.write("\t}\n");
+            f.write("\n}\n");
             f.write("}");
             f.close();
         }
@@ -123,106 +128,141 @@ public class Translator {
      * @param line
      * @throws IOException 
      */
-    private static void addVariable(String line) throws IOException{
-        // maybe split at "=" so we can ingnore white space
+    private static String addVariable(String line) throws IOException{
+        String retVal = "";
 
-        Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
-        Matcher integerMatcher = integerPattern.matcher(line);
-        
-        Pattern realsPattern = Pattern.compile("var (.+) = (\\d+\\.\\d+)");
-        Matcher realsMatcher = realsPattern.matcher(line);
+        Pattern newVarPattern = Pattern.compile("var (.*) = (.*)");
+        Matcher newVarMatcher = newVarPattern.matcher(line);
 
-        Pattern isReal = Pattern.compile("(\\d+\\.\\d+)");
+        Pattern varAssignmentPattern = Pattern.compile("(.*) = (.*)");
+        Matcher varAssignmentMatcher = varAssignmentPattern.matcher(line);
 
-        //not sure on these
-        Pattern addPattern = Pattern.compile("var (.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
-        Matcher addPatternMatcher = addPattern.matcher(line);
-
-        Pattern addPattern1 = Pattern.compile("(.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
-        Matcher addPattern1Matcher = addPattern1.matcher(line);
-        
-        Pattern subPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) sub ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
-        Matcher subPatternMatcher = subPattern.matcher(line);
-        
-        Pattern multPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) mult ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
-        Matcher multPatternMatcher = multPattern.matcher(line);
-        
-        Pattern divPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) div ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
-        Matcher divPatternMatcher = divPattern.matcher(line);
-        
-        Pattern modPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) mod ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
-        Matcher modPatternMatcher = modPattern.matcher(line);
-        
-        Pattern commandLinePattern = Pattern.compile("var (.+) = cmd\\((\\d+)\\)");
-        Matcher commandLineMatcher = commandLinePattern.matcher(line);
-
-
-        if(integerMatcher.matches()){ //matches ints
-        	if (keywords.contains(integerMatcher.group(1))) {
-        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
-        	}
-        	variables.add(integerMatcher.group(1));
-        	f.write("\t\tint " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
-        	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
-        	
-            System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));
-
-        }else if(realsMatcher.matches()){ //matches reals
-        	if (keywords.contains(realsMatcher.group(1))) {
-        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!! variable is a keyword
-        	}
-        	variables.add(integerMatcher.group(1));
-        	f.write("\t\tdouble " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
-        	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
-
-            System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));
-        // creating a variable with an add expression
-        }else if(addPatternMatcher.matches()){ //matches add
-        	//what is this adding to though??????
-        	f.write(addPatternMatcher.group(0) + " + " + addPatternMatcher.group(2)+ ";\n");
-        	
-            System.out.println(String.format("Matched %s with ADD",addPatternMatcher.group(1)));
-        // taking an already defined variable; assigning it to the add expression
-        }else if (addPattern1Matcher.matches()){
-            if(variables.contains(addPattern1Matcher.group(0))){
-                Matcher val1 = isReal.matcher(addPattern1Matcher.group(1));
-                Matcher val2 = isReal.matcher(addPattern1Matcher.group(2));
-                if (val1.matches() || val2.matches()){
-                    f.write("double "+ addPattern1Matcher.group(0) + " = " + addPattern1Matcher.group(1) + " + " + addPattern1Matcher.group(2)+";\n");
-                }else{
-                    f.write("int "+ addPattern1Matcher.group(0) + " = " + addPattern1Matcher.group(1) + " + " + addPattern1Matcher.group(2)+";\n");
-                }
-            }else{
-                // TODO: THROW VARIABLE NOT FOUND ERROR!!!!!!!!!!!!!!!
-                System.out.println("THIS IS AN ERROR; variable has not been created");
+//        Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
+//        Matcher integerMatcher = integerPattern.matcher(line);
+//
+//        Pattern realsPattern = Pattern.compile("var (.+) = (\\d+\\.\\d+)");
+//        Matcher realsMatcher = realsPattern.matcher(line);
+//
+//        Pattern isReal = Pattern.compile("(\\d+\\.\\d+)");
+//
+//        //not sure on these
+//        Pattern addPattern = Pattern.compile("var (.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+//        Matcher addPatternMatcher = addPattern.matcher(line);
+//
+//        Pattern addPattern1 = Pattern.compile("(.+) = ((\\d+)|(\\d+\\.\\d+)) add ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+//        Matcher addPattern1Matcher = addPattern1.matcher(line);
+//
+//        Pattern subPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) sub ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+//        Matcher subPatternMatcher = subPattern.matcher(line);
+//
+//        Pattern multPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) mult ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+//        Matcher multPatternMatcher = multPattern.matcher(line);
+//
+//        Pattern divPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) div ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+//        Matcher divPatternMatcher = divPattern.matcher(line);
+//
+//        Pattern modPattern = Pattern.compile("((\\d+)|(\\d+\\.\\d+)) mod ((\\\\d+)|(\\\\d+\\\\.\\\\d+))");
+//        Matcher modPatternMatcher = modPattern.matcher(line);
+//
+//        Pattern commandLinePattern = Pattern.compile("var (.+) = cmd\\((\\d+)\\)");
+//        Matcher commandLineMatcher = commandLinePattern.matcher(line);
+        if(newVarMatcher.matches()){
+            String variable = newVarMatcher.group(1);// the variable name
+            if(variables.contains(variable)){
+                System.out.println("ERROR: Variable has already been assigned");
+                return null;
             }
+            String rightExpression = expression(newVarMatcher.group(2));
+            String exprClass = getClass(newVarMatcher.group(2));
+            retVal = String.format("%s %s = %s;\n",exprClass,variable,rightExpression);
+            variables.add(variable);
+        }else if(varAssignmentMatcher.matches()){
+            System.out.print("already defined: "+line);
+            String variable = varAssignmentMatcher.group(1);
+            if(!variables.contains(variable)){
+                System.out.println("Variable does not exist! Throw error");
+                return null;
+            }
+            String rightExpression = expression(varAssignmentMatcher.group(2));
+            retVal = String.format("%s = %s;",variable,rightExpression);
         }
-        else if(commandLineMatcher.matches()){ //matches cla
-        	if (keywords.contains(commandLineMatcher.group(1))) {
-        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
-        	}
-        	
-        	//TODO write to java file!!!!!!!!!
-        	
-            System.out.println(String.format("Matched %s with COMMAND LINE",commandLineMatcher.group(2)));
-            
-        }else{
-        	//TODO Error messgage!!!!!!!!!!!!!!!!!!!!
-            System.out.println("Did not match, likely throw an error here");
-        }
+//        if(integerMatcher.matches()){ //matches ints
+//        	if (keywords.contains(integerMatcher.group(1))) {
+//        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
+//        	}
+//        	variables.add(integerMatcher.group(1));
+//        	f.write("\t\tint " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
+//        	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
+//
+//            System.out.println(String.format("Matched %s with INTEGER",integerMatcher.group(2)));
+//
+//        }else if(realsMatcher.matches()){ //matches reals
+//        	if (keywords.contains(realsMatcher.group(1))) {
+//        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!! variable is a keyword
+//        	}
+//        	variables.add(integerMatcher.group(1));
+//        	f.write("\t\tdouble " +  integerMatcher.group(1) + " = " + integerMatcher.group(2)+ ";\n");
+//        	//f.write("\t\tSystem.out.println(" + integerMatcher.group(1) + ");\n");
+//
+//            System.out.println(String.format("Matched %s with FLOAT",realsMatcher.group(2)));
+//        // creating a variable with an add expression
+//        }else if(addPatternMatcher.matches()){ //matches add
+//        	//what is this adding to though??????
+//        	f.write(addPatternMatcher.group(0) + " + " + addPatternMatcher.group(2)+ ";\n");
+//
+//            System.out.println(String.format("Matched %s with ADD",addPatternMatcher.group(1)));
+//        // taking an already defined variable; assigning it to the add expression
+//        }else if (addPattern1Matcher.matches()){
+//            if(variables.contains(addPattern1Matcher.group(0))){
+//                Matcher val1 = isReal.matcher(addPattern1Matcher.group(1));
+//                Matcher val2 = isReal.matcher(addPattern1Matcher.group(2));
+//                if (val1.matches() || val2.matches()){
+//                    f.write("double "+ addPattern1Matcher.group(0) + " = " + addPattern1Matcher.group(1) + " + " + addPattern1Matcher.group(2)+";\n");
+//                }else{
+//                    f.write("int "+ addPattern1Matcher.group(0) + " = " + addPattern1Matcher.group(1) + " + " + addPattern1Matcher.group(2)+";\n");
+//                }
+//            }else{
+//                // TODO: THROW VARIABLE NOT FOUND ERROR!!!!!!!!!!!!!!!
+//                System.out.println("THIS IS AN ERROR; variable has not been created");
+//            }
+//        }
+//        else if(commandLineMatcher.matches()){ //matches cla
+//        	if (keywords.contains(commandLineMatcher.group(1))) {
+//        		//TODO Throw an error message!!!!!!!!!!!!!!!!!!!!
+//        	}
+//
+//        	//TODO write to java file!!!!!!!!!
+//
+//            System.out.println(String.format("Matched %s with COMMAND LINE",commandLineMatcher.group(2)));
+//
+//        }else{
+//        	//TODO Error messgage!!!!!!!!!!!!!!!!!!!!
+//            System.out.println("Did not match, likely throw an error here");
+//        }
+        return retVal;
 
     }
 
+    /**
+     * Method that writes a new if statement; this does not check if the contents are
+     * complete; this does check to see if the if statement is formatted correctly;
+     * if it is not, errors will be thrown
+     * @param line
+     * @return
+     */
     private static String ifStatement(String line){
-        String retVal = "if (";
+        String retVal = "if ("; // start
         Pattern extractConditional = Pattern.compile("if (.*) then");
         Matcher formatCheck = extractConditional.matcher(line.trim());
         if(formatCheck.matches()){
+            // gets the condition statement that makes the if statement;
+            // only handles one conditional at the moment
             retVal += conditionalStatement(formatCheck.group(1));
         }else{
+            // TODO: throw an improper formatting error
             System.out.println("ERROR:"+line.trim());
+            return null;
         }
-
         retVal += "){";
         return retVal;
     }
@@ -297,6 +337,9 @@ public class Translator {
         Pattern modPattern = Pattern.compile("(.*) mod (.*)");
         Matcher modPatternMatcher = modPattern.matcher(expr);
 
+        Pattern methodPattern = Pattern.compile("(.*)\\((.*)\\)");
+        Matcher methodMatcher = methodPattern.matcher(expr);
+
         Pattern singletonPattern = Pattern.compile("(.*)");
         Matcher singletonPatternMatcher = singletonPattern.matcher(expr);
 
@@ -310,12 +353,35 @@ public class Translator {
         }else if(divPatternMatcher.matches()){
             return String.format("%s / %s",divPatternMatcher.group(1),divPatternMatcher.group(2));
         }else if(modPatternMatcher.matches()){
-            return String.format("%s - %s",modPatternMatcher.group(1),modPatternMatcher.group(2));
+            return String.format("%s %% %s",modPatternMatcher.group(1),modPatternMatcher.group(2));
         }else if(singletonPatternMatcher.matches()){
             return String.format("%s",singletonPatternMatcher.group(1));
         }
         return null;
+    }
 
+    private static String getClass(String expression){
+        Pattern doublePattern = Pattern.compile("(\\d.\\d)");
+
+        Pattern mathExpression = Pattern.compile("(\\d|\\d.\\d) (add|sub|mult|div|mod) (\\d|\\d.\\d)");
+        Matcher mathMatcher = mathExpression.matcher(expression.trim());
+
+        Pattern booleanExpression = Pattern.compile("(true|false)");
+        Matcher booleanMatcher = booleanExpression.matcher(expression.trim());
+
+        //TODO: can probably adapt this pretty easily for strings
+
+        if(mathMatcher.matches()) {
+            boolean a = doublePattern.matcher(mathMatcher.group(1)).matches();
+            boolean b = doublePattern.matcher(mathMatcher.group(3)).matches();
+            if (a || b) {
+                return "double";
+            }
+            return "int";
+        }else if(booleanMatcher.matches()){
+            return "boolean";
+        }
+        return null;
     }
 
 }

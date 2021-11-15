@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,45 +20,18 @@ public class Translator {
     private static Scanner scanner;
     HashMap<String, Integer> integerVariables = new HashMap<String, Integer>();
     HashMap<String,Data> variableMap = new HashMap<>();
-    static ArrayList<String> keywords = new ArrayList<String>();
+    static List<String> keywords = Arrays.asList("var","add","mult","div","mod","true","false","or","not",
+                                                "less than","less than or equal to","greater than","greater than or equal to",
+                                                "equal to","not equal to","if","then","or","or if","end if","end from",
+                                                "to","output","outputs","text","cla");
     static ArrayList<String> variables = new ArrayList<String>();
+    static List<String> methods = Arrays.asList("cmd"); // "built-in" methods of our language
 
     public static void main(String[] args) throws IOException {
-    	//@Nick - dont cringe its good enough for now lol
-    	keywords.add("var");
-    	keywords.add("add");
-    	keywords.add("mult");
-    	keywords.add("div");
-    	keywords.add("mod");
-    	keywords.add("true");
-    	keywords.add("false");
-    	keywords.add("or");
-    	keywords.add("not");
-    	keywords.add("less than");
-    	keywords.add("greater than");
-    	keywords.add("less than or equal to");
-    	keywords.add("greater than or equal to");
-    	keywords.add("equal to");
-    	keywords.add("not equal to");
-    	keywords.add("if");
-    	keywords.add("then");
-    	keywords.add("or if");
-    	keywords.add("or");
-    	//keywords.add("while this");
-    	//keywords.add("increment by");
-    	//keywords.add("do that");
-    	keywords.add("end");
-    	keywords.add("from");
-    	keywords.add("to");
-    	keywords.add("output");
-    	keywords.add("outputs");
-    	keywords.add("text");
-    	keywords.add("cla");
-    	
-    	
     	//creates java file
         // Test3 will be the name of file being run which SHOULD be the 0th command line argument
-    	f = new FileWriter("Test3.java");
+    	//f = new FileWriter("Test3.java");
+        f = new FileWriter(String.format("%s.java",args[0])); // this writes to a Java file that matches the passed in .txt file
     	f.write("public class Test3 {\n");
     	f.write("\tpublic static void main(String[] args){\n");
     	// gets added to from what we read
@@ -354,12 +325,24 @@ public class Translator {
             return String.format("%s / %s",divPatternMatcher.group(1),divPatternMatcher.group(2));
         }else if(modPatternMatcher.matches()){
             return String.format("%s %% %s",modPatternMatcher.group(1),modPatternMatcher.group(2));
-        }else if(singletonPatternMatcher.matches()){
+        }else if(methodMatcher.matches()){
+            if(methods.contains(methodMatcher.group(1))){
+                return getMethod(expr);
+            }
+            return null;
+        }
+        else if(singletonPatternMatcher.matches()){
             return String.format("%s",singletonPatternMatcher.group(1));
         }
         return null;
     }
 
+    /**
+     * Method that takes in a string, evaluates the string through pattern matching and
+     * returns what the Java class the expression represents.
+     * @param expression
+     * @return
+     */
     private static String getClass(String expression){
         Pattern doublePattern = Pattern.compile("(\\d.\\d)");
 
@@ -381,6 +364,17 @@ public class Translator {
         }else if(booleanMatcher.matches()){
             return "boolean";
         }
+        return null;
+    }
+
+
+    /**
+     * Method that is meta in that it gets methods.
+     * @param expression
+     * @return
+     */
+    private static String getMethod(String expression){
+
         return null;
     }
 

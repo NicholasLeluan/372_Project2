@@ -231,6 +231,7 @@ public class Translator {
             retVal += conditionalStatement(formatCheck.group(1));
         }else{
             // TODO: throw an improper formatting error
+            //
             System.out.println("ERROR:"+line.trim());
             return null;
         }

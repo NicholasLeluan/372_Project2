@@ -31,8 +31,9 @@ public class Translator {
     	//creates java file
         // Test3 will be the name of file being run which SHOULD be the 0th command line argument
     	//f = new FileWriter("Test3.java");
-        f = new FileWriter(String.format("%s.java",args[0])); // this writes to a Java file that matches the passed in .txt file
-    	f.write("public class Test3 {\n");
+        String className = args[0].substring(0,args[0].length()-4);
+        f = new FileWriter(String.format("%s.java",className)); // this writes to a Java file that matches the passed in .txt file
+    	f.write(String.format("public class %s {\n",className));
     	f.write("\tpublic static void main(String[] args){\n");
     	// gets added to from what we read
 
@@ -345,9 +346,9 @@ public class Translator {
      * @return
      */
     private static String getClass(String expression){
-        Pattern doublePattern = Pattern.compile("(\\d.\\d)");
+        Pattern doublePattern = Pattern.compile("-?(\\d.\\d)");
 
-        Pattern mathExpression = Pattern.compile("(\\d|\\d.\\d) (add|sub|mult|div|mod) (\\d|\\d.\\d)");
+        Pattern mathExpression = Pattern.compile("-?(\\d|\\d.\\d) (add|sub|mult|div|mod) -?(\\d|\\d.\\d)");
         Matcher mathMatcher = mathExpression.matcher(expression.trim());
 
         Pattern booleanExpression = Pattern.compile("(true|false)");

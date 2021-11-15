@@ -1,9 +1,9 @@
-var x = 3 add 4.1
+var x = 3 add -4.1
 var c = 5 sub 4.1
-var y = 3 mult 6.1
+var y = -3 mult 6
 var p = 3 mod 3.1
 var b = 3 mult 3.1
-var a = 3 mult 3.1
+var a = 3 mult -3
 var s = true
 s = false
 

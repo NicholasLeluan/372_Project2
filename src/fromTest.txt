@@ -1,9 +1,10 @@
-var x = cmd(0)
-var half = x div 2
+var x = 0
+var half = 2 div 2
 var flag = false
+half = 100
 
 if x greater than 0 then
-    from var i to half increment by 1
+    from var i = 0 to half increment by 1
         if x mod i equals 0 then
             flag = true
             stop loop now
@@ -18,3 +19,4 @@ if x greater than 0 then
 or
     output("not prime")
 end if
+

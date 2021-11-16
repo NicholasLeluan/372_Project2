@@ -41,11 +41,7 @@ public class Translator {
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
 
         //
-        Pattern existingVariableAssignmentPattern = Pattern.compile("(.+) = (.*)");
-
-        // Pattern for if statements; will start with if, end with 'end'
-        Pattern ifStatementPattern = Pattern.compile("^(if)");
-
+        Pattern existingVariableAssignmentPattern = Pattern.compile("^\\w+(?=\\s+=) = (.*)");
 
         // we will read the file
         // for each line -> read the "header" words that indicate what the statement is
@@ -57,22 +53,35 @@ public class Translator {
         scanner = new Scanner(file);
         int lineNo = 1;
         int openIfs = 0; //used as flag to determine correct if formatting
+        int openFroms = 0;
         while (scanner.hasNext()){
-            String line = scanner.nextLine();
+            String line = scanner.nextLine().trim();
             Matcher newVariableAssignment = variableAssignmentPattern.matcher(line);
             Matcher oldVariableAssignment = existingVariableAssignmentPattern.matcher(line);
             //Matcher ifStatement = ifStatementPattern.matcher(line);
             // if the read in line is a variable assignment call the variableAssignment method
             if (newVariableAssignment.matches() || oldVariableAssignment.matches()){
                 //System.out.println("ADD VARIABLE::"+addVariable(line));
-                f.write(addVariable(line));
-            }else if(line.trim().startsWith("if")){
-                //System.out.println("IF OUT IN MAIN:: " + ifStatement(line));
-                f.write(ifStatement(line)+"\n");
-                openIfs += 1;
-            }else if(line.trim().equals("end if")){
+                f.write(addVariable(line)+";\n");
+            }else if(line.trim().startsWith("if") || line.trim().startsWith("or if")){
+                boolean startsWithOrIf = line.trim().startsWith("or if");
+                if (!startsWithOrIf){
+                    openIfs+=1;
+                }
+                f.write(ifStatement(line,startsWithOrIf)+"\n");
+            }else if(line.trim().equals("or")){
+                f.write("\n}else{\n");
+            }
+            else if(line.trim().equals("end if") || line.trim().equals("end from")){
                 f.write("}\n");
-                openIfs -=1;
+                if (line.trim().equals("end if")){
+                    openIfs -= 1;
+                }else{
+                    openFroms -= 1;
+                }
+            }else if(line.trim().startsWith("from")){
+                f.write(fromLoopStatement(line));
+                openFroms += 1;
             }
             lineNo++;
         }
@@ -100,7 +109,7 @@ public class Translator {
      * @param line
      * @throws IOException 
      */
-    private static String addVariable(String line) throws IOException{
+    private static String addVariable(String line) {
         String retVal = "";
 
         Pattern newVarPattern = Pattern.compile("var (.*) = (.*)");
@@ -145,18 +154,18 @@ public class Translator {
                 return null;
             }
             String rightExpression = expression(newVarMatcher.group(2));
+            System.out.println("GOING INT CLASS MATCH:: "+ newVarMatcher.group(2));
             String exprClass = getClass(newVarMatcher.group(2));
-            retVal = String.format("%s %s = %s;\n",exprClass,variable,rightExpression);
+            retVal = String.format("%s %s = %s",exprClass,variable,rightExpression);
             variables.add(variable);
         }else if(varAssignmentMatcher.matches()){
-            System.out.print("already defined: "+line);
             String variable = varAssignmentMatcher.group(1);
             if(!variables.contains(variable)){
                 System.out.println("Variable does not exist! Throw error");
                 return null;
             }
             String rightExpression = expression(varAssignmentMatcher.group(2));
-            retVal = String.format("%s = %s;",variable,rightExpression);
+            retVal = String.format("%s = %s",variable,rightExpression);
         }
 //        if(integerMatcher.matches()){ //matches ints
 //        	if (keywords.contains(integerMatcher.group(1))) {
@@ -222,17 +231,20 @@ public class Translator {
      * @param line
      * @return
      */
-    private static String ifStatement(String line){
-        String retVal = "if ("; // start
-        Pattern extractConditional = Pattern.compile("if (.*) then");
+    private static String ifStatement(String line, boolean orIf){
+        String retVal = "";
+        //String retVal = "if ("; // start
+        if (orIf){
+            retVal += "\n}else if (";
+        }else{
+            retVal += "if(";
+        }
+        Pattern extractConditional = Pattern.compile("(if|or if) (.*) then");
         Matcher formatCheck = extractConditional.matcher(line.trim());
         if(formatCheck.matches()){
-            // gets the condition statement that makes the if statement;
-            // only handles one conditional at the moment
-            retVal += conditionalStatement(formatCheck.group(1));
+            retVal += conditionalStatement(formatCheck.group(2));
         }else{
             // TODO: throw an improper formatting error
-            //
             System.out.println("ERROR:"+line.trim());
             return null;
         }
@@ -295,6 +307,9 @@ public class Translator {
      * @param expr
      */
     private static String expression(String expr){
+        // add boolean expressions ((true|false) and (true|false)); ((true|false) or (true|false));
+        //(not (true|false));
+
         Pattern addPattern = Pattern.compile("(.*) add (.*)");
         Matcher addPatternMatcher = addPattern.matcher(expr);
 
@@ -346,13 +361,16 @@ public class Translator {
      * @return
      */
     private static String getClass(String expression){
-        Pattern doublePattern = Pattern.compile("-?(\\d.\\d)");
-
-        Pattern mathExpression = Pattern.compile("-?(\\d|\\d.\\d) (add|sub|mult|div|mod) -?(\\d|\\d.\\d)");
+        Pattern doublePattern = Pattern.compile("-?(\\d+\\.\\d*)");
+        // for expressions that have 2 numbers(either float or int)
+        Pattern mathExpression = Pattern.compile("-?(\\d+\\.?\\d*) (add|sub|mult|div|mod) -?(\\d+\\.?\\d*)");
         Matcher mathMatcher = mathExpression.matcher(expression.trim());
-
+        // for boolean expressions
         Pattern booleanExpression = Pattern.compile("(true|false)");
         Matcher booleanMatcher = booleanExpression.matcher(expression.trim());
+        // for single digits
+        Pattern singletonNumExpression = Pattern.compile("(\\d+\\.?\\d*)");
+        Matcher singletonNumMatcher = singletonNumExpression.matcher(expression.trim());
 
         //TODO: can probably adapt this pretty easily for strings
 
@@ -365,7 +383,13 @@ public class Translator {
             return "int";
         }else if(booleanMatcher.matches()){
             return "boolean";
+        }else if(singletonNumMatcher.matches()){
+            if (doublePattern.matcher(singletonNumMatcher.group(1)).matches()){
+                return "double";
+            }
+            return "int";
         }
+        System.out.println("FAIL:"+expression);
         return null;
     }
 
@@ -377,6 +401,60 @@ public class Translator {
      */
     private static String getMethod(String expression){
 
+        return null;
+    }
+
+    private static String fromLoopStatement(String expression){
+
+        System.out.println("START OF FROM:: "+expression);
+        expression = expression.trim();
+
+        Pattern fromPattern = Pattern.compile("from (.*) to (.*) (increment|decrement) by (\\d+)");
+        Matcher fromPatternMatcher = fromPattern.matcher(expression);
+
+        Pattern variablePredefinedExtractor = Pattern.compile("^\\w+(?=\\s+=) = (.*)");
+
+        Pattern variableNewExtractor = Pattern.compile("(int|double) (.*) = (.*)");
+
+        Pattern allDigits = Pattern.compile("[0-9]+");
+        String variable = "NULL";
+        if(fromPatternMatcher.matches()){
+            String varAssignment = addVariable(fromPatternMatcher.group(1));
+            String toVal = fromPatternMatcher.group(2);
+            // checks to see if the toVal is an int; if not an int: check if variable has been defined before
+            if(!allDigits.matcher(toVal).matches()){
+                if(!variables.contains(toVal)){
+                    //TODO: throw undefined variable error
+                    System.out.println("THROW ERROR HERE: to value in from loop is a " +
+                            "variable that has not been defined "+toVal);
+                    return null;
+                }
+            }
+            String plusOrMinus = fromPatternMatcher.group(3);
+            String byNum = fromPatternMatcher.group(4);
+            String sign = "SIGN";
+            String comp = "COMP";
+            if(plusOrMinus.equals("increment")){
+                sign = "+";
+                comp = "<";
+            }else if(plusOrMinus.equals("decrement")){
+                sign = "-";
+                comp = ">";
+            }
+            //if the variable assignment returns something predefined: i.e. i = 1
+            if(variablePredefinedExtractor.matcher(varAssignment).matches()){
+                Matcher m = Pattern.compile("^\\w+(?=\\s+=)").matcher(varAssignment);
+                m.find();
+                variable = m.group(0);
+            }else if(variableNewExtractor.matcher(varAssignment).matches()){
+                Matcher m = variableNewExtractor.matcher(varAssignment);
+                m.find();
+                variable = m.group(2);
+            }
+            return String.format("for(%s; %s %s %s; %s %s= %s){\n",
+                    varAssignment,variable,comp,toVal,variable,sign,byNum);
+
+        }
         return null;
     }
 

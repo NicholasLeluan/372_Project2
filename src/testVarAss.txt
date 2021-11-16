@@ -1,9 +1,22 @@
-var x = 3 add -4.1
-var c = 5 sub 4.1
-var y = -3 mult 6
-var p = 3 mod 3.1
-var b = 3 mult 3.1
-var a = 3 mult -3
-var s = true
-s = false
+var x = 3 add -4.11
+var c = 5.11222 sub 4.1
+var y = 5 mult 6000
+var p = 3000 sub 5
+var t = 3 div 3
+var m = 100.69
+var reallyLongVariableName = 1 mod 2
+
+
+if x greater than y then
+if y equals 40 then
+y = 4000
+end if
+or if c less than y then
+c = 101010
+or
+x = 100000000
+var bbb = 999
+end if
+
+from var i = 0 to m increment by 1
 

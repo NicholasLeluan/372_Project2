@@ -112,9 +112,10 @@ public class Translator {
      *  - varible assingment is made when variable was already declared (i.e. the map already has
      *  the variable)
      * @param line
+     * @throws FormattingError 
      * @throws IOException 
      */
-    private static String addVariable(String line) {
+    private static String addVariable(String line) throws FormattingError {
         String retVal = "";
 
         Pattern newVarPattern = Pattern.compile("var (.*) = (.*)");
@@ -266,8 +267,9 @@ public class Translator {
      * @param line String value that should contain a valid matching conditional statement
      * @return String value of the built Java translation of the conditional
      * @throws ConditionalNoMatch 
+     * @throws FormattingError 
      */
-    private static String conditionalStatement(String line) throws ConditionalNoMatch{
+    private static String conditionalStatement(String line) throws ConditionalNoMatch, FormattingError{
         // GREATER THAN OR EQUAL TO
         Pattern condGTOE = Pattern.compile("(.*) greater than or equal to (.*)");
         Matcher matcherGTOE = condGTOE.matcher(line.trim());
@@ -315,8 +317,9 @@ public class Translator {
     /**
      * Reduces a given string to a simple expression; can perform the singleton
      * @param expr
+     * @throws FormattingError 
      */
-    private static String expression(String expr){
+    private static String expression(String expr) throws FormattingError{
         // add boolean expressions ((true|false) and (true|false)); ((true|false) or (true|false));
         //(not (true|false));
 
@@ -408,13 +411,34 @@ public class Translator {
      * Method that is meta in that it gets methods.
      * @param expression
      * @return
+     * @throws FormattingError 
      */
-    private static String getMethod(String expression){
-
-        return null;
+    private static String getMethod(String expression) throws FormattingError{
+    	Pattern printPattern = Pattern.compile("(output\\()(\\w*)(\\))");
+        Matcher printPatternMatcher = printPattern.matcher(expression);
+        
+        Pattern print2Pattern = Pattern.compile("(outputs\\()(\\w*)(\\))"); //will print w new line
+        Matcher print2PatternMatcher = print2Pattern.matcher(expression);
+        
+        Pattern cmdPattern = Pattern.compile("(cmd\\(\\d\\))");
+        Matcher cmdPatternMatcher = cmdPattern.matcher(expression);
+        
+        if (printPatternMatcher.matches()) {
+        	//matches to "output(" + printPatternMatcher.group(2) + ")";
+        	return "System.out.print(" + printPatternMatcher.group(2) + ")\n";
+        } else if (print2PatternMatcher.matches()) {
+        	//matches to "output(" + printPatternMatcher.group(2) + ")\n";
+        	return "System.out.println(" + printPatternMatcher.group(2) + ")\n";
+        } else if (cmdPatternMatcher.matches()) {
+        	//matches "cmd(" + cmdPatternMatcher.group(2) + ")\n";
+        	return "args[" + cmdPatternMatcher.group(1) + "]\n";
+        } else {
+        	throw new FormattingError();
+        }
+        //return null;
     }
 
-    private static String fromLoopStatement(String expression) throws UndefinedVariable{
+    private static String fromLoopStatement(String expression) throws UndefinedVariable, FormattingError{
 
         System.out.println("START OF FROM:: "+expression);
         expression = expression.trim();
@@ -468,5 +492,6 @@ public class Translator {
         }
         return null;
     }
+    
 
 }

@@ -1,15 +1,13 @@
 
 public class UndefinedVariable extends Exception{
-	
-	public UndefinedVariable() {
+	int line;
+	public UndefinedVariable(int line) {
 		super();
-	}
-	
-	public String toString(int lineNo) {
-		return "Undefined variable on line " + lineNo;
+		this.line = line;
 	}
 	
 	public String toString() {
-		return "An error occured in the main loop";
+		return "Undefined variable on line " + line;
 	}
+
 }

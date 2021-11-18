@@ -1,11 +1,12 @@
 
 public class FormattingError extends Exception{
-
-	public FormattingError() {
+	int line;
+	public FormattingError(int line) {
 		super();
+		this.line = line;
 	}
 	
-	public String toString(int lineNo) {
-		return "Formatting error on line " + lineNo;
+	public String toString() {
+		return "Formatting error on line " + line;
 	}
 }

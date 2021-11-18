@@ -1,9 +1,6 @@
-or(true,false)
-var x = or(true,false)
-var y = and(x,true)
-y = not(y)
-var z = or(x,y)
-var p = not(false)
-if and(x,y) then
-end if
-z = and(true,false)
+var a = 4
+
+
+
+
+var a = 5

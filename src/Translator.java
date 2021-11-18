@@ -42,7 +42,6 @@ public class Translator {
         Pattern methodPattern = Pattern.compile("(.*)\\((.*)\\)");
 
         File file = new File(args[0]);
-        System.out.println(String.format("OPENED FILE:: %s",args[0]));
         scanner = new Scanner(file);
         int lineNo = 1;
         int openIfs = 0; //used as flag to determine correct if formatting
@@ -97,7 +96,13 @@ public class Translator {
             f.write("}");
             f.close();
         }
-        System.out.println(variableTypes.toString());
+        System.out.println("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        String successMessage = String.format(
+                "| SUCCESS! File has been successfully translated! \n| Run ```javac %s.java``` to compile the file \n" +
+                        "| Then use ```java %s``` along with appropriate \n| command line arguments to run program. ",
+                className,className);
+        System.out.println(successMessage);
+        System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
     }
 
     /**
@@ -123,7 +128,6 @@ public class Translator {
                 return null;
             }
             String rightExpression = expression(newVarMatcher.group(2));
-            System.out.println("GOING INT CLASS MATCH:: "+ newVarMatcher.group(2));
             String exprClass = getClass(newVarMatcher.group(2));
             retVal = String.format("%s %s = %s",exprClass,variable,rightExpression);
             variables.add(variable);
@@ -163,10 +167,7 @@ public class Translator {
         if(formatCheck.matches()){
             retVal += conditionalStatement(formatCheck.group(2));
         }else{
-            // TODO: throw an improper formatting error
-            System.out.println("ERROR:"+line.trim());
             throw new FormattingError();
-            //return null;
         }
         retVal += "){";
         return retVal;
@@ -219,10 +220,7 @@ public class Translator {
             return String.format("%s != %s",
                     expression(matcherNotEql.group(1)),expression(matcherNotEql.group(2)));
         }
-        //TODO::
         throw new ConditionalNoMatch();
-        //System.out.println("DID NOT MATCH IN CONDITIONAL; THROW ERROR");
-        //return null;
     }
 
     /**
@@ -231,9 +229,6 @@ public class Translator {
      * @throws FormattingError 
      */
     private static String expression(String expr) throws FormattingError{
-        // add boolean expressions ((true|false) and (true|false)); ((true|false) or (true|false));
-        //(not (true|false));
-
         Pattern addPattern = Pattern.compile("(.*) add (.*)");
         Matcher addPatternMatcher = addPattern.matcher(expr);
 
@@ -251,6 +246,9 @@ public class Translator {
 
         Pattern methodPattern = Pattern.compile("(.*)\\((.*)\\)");
         Matcher methodMatcher = methodPattern.matcher(expr);
+
+        Pattern stringLiteralPattern = Pattern.compile("\"(.*)\"");
+        Matcher stringMatcher = stringLiteralPattern.matcher(expr);
 
         Pattern singletonPattern = Pattern.compile("(.*)");
         Matcher singletonPatternMatcher = singletonPattern.matcher(expr);
@@ -275,6 +273,8 @@ public class Translator {
         }
         else if(singletonPatternMatcher.matches()){
             return String.format("%s",singletonPatternMatcher.group(1));
+        }else if(stringMatcher.matches()){
+            System.out.println("FOUND A STRING::" + expr);
         }
         return null;
     }
@@ -286,8 +286,6 @@ public class Translator {
      * @return
      */
     private static String getClass(String expression){
-        System.out.println(String.format("CLASS expr:: %s",expression));
-
         Pattern doublePattern = Pattern.compile("-?(\\d+\\.\\d*)");
         // for expressions that have 2 numbers(either float or int)
         Pattern mathExpression = Pattern.compile("-?(\\w*|\\d+\\.?\\d*) (add|sub|mult|div|mod) -?(\\d+\\.?\\d*|\\S+$)");
@@ -302,14 +300,13 @@ public class Translator {
         Pattern methodExpression = Pattern.compile("(.*)\\((.*)\\)");
         Matcher methodExpressionMatcher = methodExpression.matcher(expression.trim());
 
+        Pattern stringExpression = Pattern.compile("(\"(.*)\")");
+        Matcher stringMatcher = stringExpression.matcher(expression.trim());
+
 
         //TODO: can probably adapt this pretty easily for strings
 
         if(mathMatcher.matches()) {
-            // here we are.
-            // we need to check to see if x or y in x mod y is a variable
-            System.out.println(String.format("A: %s\nB:%s",mathMatcher.group(1).trim(),mathMatcher.group(3).trim()));
-            System.out.println(variableTypes.containsKey(mathMatcher.group(1)));
             String var1 = mathMatcher.group(1);
             String var2 = mathMatcher.group(3);
             if(variableTypes.containsKey(var1) && variableTypes.containsKey(var2)){
@@ -358,6 +355,8 @@ public class Translator {
             // Only handling ints at the moment; might need to change this
             // maybe do a .contains("cmd") to determine a quick result
             return "int";
+        }else if(stringMatcher.matches()){
+            return "String";
         }
         System.out.println("FAIL:"+expression);
         return null;
@@ -379,7 +378,6 @@ public class Translator {
         
         Pattern cmdPattern = Pattern.compile("cmd\\((\\d)\\)");
         Matcher cmdPatternMatcher = cmdPattern.matcher(expression);
-        System.out.println("CHECKING IFS");
         if (printPatternMatcher.matches()) {
         	return "System.out.print(" + printPatternMatcher.group(1) + ")";
         } else if (print2PatternMatcher.matches()) {
@@ -388,11 +386,17 @@ public class Translator {
         } else if (cmdPatternMatcher.matches()) {
         	return "Integer.parseInt(args[" + cmdPatternMatcher.group(1) + "])";
         } else {
-            System.out.println("ERROR WITH::"+expression);
         	throw new FormattingError();
         }
     }
 
+    /**
+     * Method that builds and returns the beginning statement of a for loop in Java
+     * @param expression
+     * @return
+     * @throws UndefinedVariable
+     * @throws FormattingError
+     */
     private static String fromLoopStatement(String expression) throws UndefinedVariable, FormattingError{
         expression = expression.trim();
 

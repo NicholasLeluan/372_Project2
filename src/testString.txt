@@ -1,0 +1,6 @@
+var y = "Hello"
+var x = "World"
+outputs(x)
+outputs(y)
+x = "bye."
+outputs(x)

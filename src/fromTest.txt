@@ -1,5 +1,6 @@
-var x = 0
-var half = 2 div 2
+var x = 3.4
+var y = 3.4
+var half = -2 mod -y
 var flag = false
 half = 100
 

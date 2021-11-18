@@ -26,7 +26,7 @@ public class Translator {
                                                 "to","output","outputs","text","cla");
     static ArrayList<String> variables = new ArrayList<String>();
     static HashMap<String,String> variableTypes = new HashMap<>();
-    static List<String> methods = Arrays.asList("cmd"); // "built-in" methods of our language
+    static List<String> methods = Arrays.asList("cmd","or","not","output","outputs","and"); // "built-in" methods of our language
 
     public static void main(String[] args) throws IOException, FormattingError {
         String className = args[0].substring(0,args[0].length()-4);
@@ -200,6 +200,9 @@ public class Translator {
         //NOT EQUAL TO
         Pattern condNotEql = Pattern.compile("(.*) not equal to (.*)");
         Matcher matcherNotEql = condNotEql.matcher(line.trim());
+        // Uses a boolean condition method
+        Pattern methodExpression = Pattern.compile("(.*)\\((.*)\\)");
+        Matcher methodExpressionMatcher = methodExpression.matcher(line.trim());
 
         if(matcherGTOE.matches()){
             return String.format("%s >= %s",
@@ -219,6 +222,8 @@ public class Translator {
         }else if(matcherNotEql.matches()){
             return String.format("%s != %s",
                     expression(matcherNotEql.group(1)),expression(matcherNotEql.group(2)));
+        }else if(methodExpressionMatcher.matches()){
+            return  getMethod(line);
         }
         throw new ConditionalNoMatch();
     }
@@ -347,6 +352,9 @@ public class Translator {
         }else if(booleanMatcher.matches()){
             return "boolean";
         }else if(singletonNumMatcher.matches()){
+            if (variableTypes.containsKey(singletonNumMatcher.group(1))){
+                return variableTypes.get(singletonNumMatcher.group(1));
+            }
             if (doublePattern.matcher(singletonNumMatcher.group(1)).matches()){
                 return "double";
             }
@@ -354,7 +362,11 @@ public class Translator {
         }else if(methodExpressionMatcher.matches()){
             // Only handling ints at the moment; might need to change this
             // maybe do a .contains("cmd") to determine a quick result
-            return "int";
+            if(expression.contains("cmd")){
+                return "int";
+            }else if(expression.contains("not(") || expression.contains("or(") ||expression.contains("and(")){
+                return "boolean";
+            }
         }else if(stringMatcher.matches()){
             return "String";
         }
@@ -378,6 +390,17 @@ public class Translator {
         
         Pattern cmdPattern = Pattern.compile("cmd\\((\\d)\\)");
         Matcher cmdPatternMatcher = cmdPattern.matcher(expression);
+
+        Pattern booleanOrPattern = Pattern.compile("or\\((\\w+),(\\w+)\\)");
+        Matcher booleanOr = booleanOrPattern.matcher(expression);
+
+        Pattern booleanAndPattern = Pattern.compile("and\\((\\w+),(\\w+)\\)");
+        Matcher booleanAnd = booleanAndPattern.matcher(expression);
+
+        Pattern booleanNotPattern = Pattern.compile("not\\((\\w+)\\)");
+        Matcher booleanNot = booleanNotPattern.matcher(expression);
+
+
         if (printPatternMatcher.matches()) {
         	return "System.out.print(" + printPatternMatcher.group(1) + ")";
         } else if (print2PatternMatcher.matches()) {
@@ -385,7 +408,14 @@ public class Translator {
         	return "System.out.println(" + print2PatternMatcher.group(1) + ")";
         } else if (cmdPatternMatcher.matches()) {
         	return "Integer.parseInt(args[" + cmdPatternMatcher.group(1) + "])";
-        } else {
+        }else if(booleanOr.matches()){
+            return String.format("%s || %s",booleanOr.group(1),booleanOr.group(2));
+        }else if(booleanAnd.matches()){
+            return String.format("%s && %s",booleanAnd.group(1),booleanAnd.group(2));
+        }else if(booleanNot.matches()){
+            return String.format("!%s",booleanNot.group(1));
+        }
+        else {
         	throw new FormattingError();
         }
     }

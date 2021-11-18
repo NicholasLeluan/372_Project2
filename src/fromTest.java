@@ -1,7 +1,8 @@
 public class fromTest {
 	public static void main(String[] args){
-int x = 0;
-int half = 2 / 2;
+double x = 3.4;
+double y = 3.4;
+double half = -2 % -y;
 boolean flag = false;
 half = 100;
 if(x > 0){

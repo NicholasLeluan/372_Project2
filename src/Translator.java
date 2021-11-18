@@ -25,6 +25,7 @@ public class Translator {
                                                 "equal to","not equal to","if","then","or","or if","end if","end from",
                                                 "to","output","outputs","text","cla");
     static ArrayList<String> variables = new ArrayList<String>();
+    static HashMap<String,String> variableTypes = new HashMap<>();
     static List<String> methods = Arrays.asList("cmd"); // "built-in" methods of our language
 
     public static void main(String[] args) throws IOException, FormattingError {
@@ -98,6 +99,7 @@ public class Translator {
             f.write("}");
             f.close();
         }
+        System.out.println(variableTypes.toString());
     }
 
     /**
@@ -122,6 +124,7 @@ public class Translator {
         Matcher newVarMatcher = newVarPattern.matcher(line);
 
         Pattern varAssignmentPattern = Pattern.compile("(.*) = (.*)");
+       // Pattern varAssignmentPattern   = Pattern.compile("(^\\S+$|)")
         Matcher varAssignmentMatcher = varAssignmentPattern.matcher(line);
 
 //        Pattern integerPattern = Pattern.compile("var (.+) = (\\d+)");
@@ -164,6 +167,7 @@ public class Translator {
             String exprClass = getClass(newVarMatcher.group(2));
             retVal = String.format("%s %s = %s",exprClass,variable,rightExpression);
             variables.add(variable);
+            variableTypes.put(variable,exprClass);
         }else if(varAssignmentMatcher.matches()){
             String variable = varAssignmentMatcher.group(1);
             if(!variables.contains(variable)){
@@ -376,7 +380,7 @@ public class Translator {
     private static String getClass(String expression){
         Pattern doublePattern = Pattern.compile("-?(\\d+\\.\\d*)");
         // for expressions that have 2 numbers(either float or int)
-        Pattern mathExpression = Pattern.compile("-?(\\d+\\.?\\d*) (add|sub|mult|div|mod) -?(\\d+\\.?\\d*)");
+        Pattern mathExpression = Pattern.compile("-?(\\w*|\\d+\\.?\\d*) (add|sub|mult|div|mod) -?(\\d+\\.?\\d*|\\S+$)");
         Matcher mathMatcher = mathExpression.matcher(expression.trim());
         // for boolean expressions
         Pattern booleanExpression = Pattern.compile("(true|false)");
@@ -385,9 +389,45 @@ public class Translator {
         Pattern singletonNumExpression = Pattern.compile("(\\d+\\.?\\d*)");
         Matcher singletonNumMatcher = singletonNumExpression.matcher(expression.trim());
 
+
         //TODO: can probably adapt this pretty easily for strings
 
         if(mathMatcher.matches()) {
+            // here we are.
+            // we need to check to see if x or y in x mod y is a variable
+            System.out.println(String.format("A: %s\nB:%s",mathMatcher.group(1).trim(),mathMatcher.group(3).trim()));
+            System.out.println(variableTypes.containsKey(mathMatcher.group(1)));
+            String var1 = mathMatcher.group(1);
+            String var2 = mathMatcher.group(3);
+            if(variableTypes.containsKey(var1) && variableTypes.containsKey(var2)){
+                boolean classVal1 = variableTypes.get(var1).equals("double");
+                boolean classVal2 = variableTypes.get(var2).equals("double");
+                if(classVal1 || classVal2){
+                    return "double";
+                }
+                return "int";
+            }else if(variableTypes.containsKey(var1) || variableTypes.containsKey(var2)){
+                String alreadyDefinedVar = "";
+                if(variableTypes.containsKey(var1)){
+                    alreadyDefinedVar = variableTypes.get(var1);
+                    boolean class1 = alreadyDefinedVar.equals("double");
+                    boolean class2 = doublePattern.matcher(mathMatcher.group(3)).matches();
+                    if (class1 || class2){
+                        return "double";
+                    }else{
+                        return "int";
+                    }
+                }else{
+                    alreadyDefinedVar = variableTypes.get(var2);
+                    boolean class1 = alreadyDefinedVar.equals("double");
+                    boolean class2 = doublePattern.matcher(mathMatcher.group(1)).matches();
+                    if (class1 || class2){
+                        return "double";
+                    }else{
+                        return "int";
+                    }
+                }
+            }
             boolean a = doublePattern.matcher(mathMatcher.group(1)).matches();
             boolean b = doublePattern.matcher(mathMatcher.group(3)).matches();
             if (a || b) {

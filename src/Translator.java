@@ -28,7 +28,7 @@ public class Translator {
     static HashMap<String,String> variableTypes = new HashMap<>();
     static List<String> methods = Arrays.asList("cmd"); // "built-in" methods of our language
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, FormattingError {
     	//creates java file
         // Test3 will be the name of file being run which SHOULD be the 0th command line argument
     	//f = new FileWriter("Test3.java");
@@ -36,7 +36,7 @@ public class Translator {
         f = new FileWriter(String.format("%s.java",className)); // this writes to a Java file that matches the passed in .txt file
     	f.write(String.format("public class %s {\n",className));
     	f.write("\tpublic static void main(String[] args){\n");
-    	// gets added to from what we read
+    	// gets added to from what we rea
 
         // Pattern for variable assignment
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
@@ -56,6 +56,7 @@ public class Translator {
         int openIfs = 0; //used as flag to determine correct if formatting
         int openFroms = 0;
         while (scanner.hasNext()){
+        	try {
             String line = scanner.nextLine().trim();
             Matcher newVariableAssignment = variableAssignmentPattern.matcher(line);
             Matcher oldVariableAssignment = existingVariableAssignmentPattern.matcher(line);
@@ -85,10 +86,14 @@ public class Translator {
                 openFroms += 1;
             }
             lineNo++;
+        	} catch (Exception e) {
+        		System.out.println(e.toString());
+        		return;
+        		
+        	}
         }
         if (openIfs > 0){
-            /// TODO:: IF FORMATTING ERROR
-            // will probably need the same for the loops
+            throw new FormattingError();
         }else{
             f.write("\n}\n");
             f.write("}");
@@ -109,9 +114,10 @@ public class Translator {
      *  - varible assingment is made when variable was already declared (i.e. the map already has
      *  the variable)
      * @param line
+     * @throws FormattingError 
      * @throws IOException 
      */
-    private static String addVariable(String line) {
+    private static String addVariable(String line) throws FormattingError {
         String retVal = "";
 
         Pattern newVarPattern = Pattern.compile("var (.*) = (.*)");
@@ -234,8 +240,10 @@ public class Translator {
      * if it is not, errors will be thrown
      * @param line
      * @return
+     * @throws FormattingError 
+     * @throws ConditionalNoMatch 
      */
-    private static String ifStatement(String line, boolean orIf){
+    private static String ifStatement(String line, boolean orIf) throws FormattingError, ConditionalNoMatch{
         String retVal = "";
         //String retVal = "if ("; // start
         if (orIf){
@@ -250,7 +258,8 @@ public class Translator {
         }else{
             // TODO: throw an improper formatting error
             System.out.println("ERROR:"+line.trim());
-            return null;
+            throw new FormattingError();
+            //return null;
         }
         retVal += "){";
         return retVal;
@@ -261,8 +270,10 @@ public class Translator {
      * needed to be extracted;
      * @param line String value that should contain a valid matching conditional statement
      * @return String value of the built Java translation of the conditional
+     * @throws ConditionalNoMatch 
+     * @throws FormattingError 
      */
-    private static String conditionalStatement(String line){
+    private static String conditionalStatement(String line) throws ConditionalNoMatch, FormattingError{
         // GREATER THAN OR EQUAL TO
         Pattern condGTOE = Pattern.compile("(.*) greater than or equal to (.*)");
         Matcher matcherGTOE = condGTOE.matcher(line.trim());
@@ -302,15 +313,17 @@ public class Translator {
                     expression(matcherNotEql.group(1)),expression(matcherNotEql.group(2)));
         }
         //TODO::
-        System.out.println("DID NOT MATCH IN CONDITIONAL; THROW ERROR");
-        return null;
+        throw new ConditionalNoMatch();
+        //System.out.println("DID NOT MATCH IN CONDITIONAL; THROW ERROR");
+        //return null;
     }
 
     /**
      * Reduces a given string to a simple expression; can perform the singleton
      * @param expr
+     * @throws FormattingError 
      */
-    private static String expression(String expr){
+    private static String expression(String expr) throws FormattingError{
         // add boolean expressions ((true|false) and (true|false)); ((true|false) or (true|false));
         //(not (true|false));
 
@@ -438,13 +451,34 @@ public class Translator {
      * Method that is meta in that it gets methods.
      * @param expression
      * @return
+     * @throws FormattingError 
      */
-    private static String getMethod(String expression){
-
-        return null;
+    private static String getMethod(String expression) throws FormattingError{
+    	Pattern printPattern = Pattern.compile("(output\\()(\\w*)(\\))");
+        Matcher printPatternMatcher = printPattern.matcher(expression);
+        
+        Pattern print2Pattern = Pattern.compile("(outputs\\()(\\w*)(\\))"); //will print w new line
+        Matcher print2PatternMatcher = print2Pattern.matcher(expression);
+        
+        Pattern cmdPattern = Pattern.compile("(cmd\\(\\d\\))");
+        Matcher cmdPatternMatcher = cmdPattern.matcher(expression);
+        
+        if (printPatternMatcher.matches()) {
+        	//matches to "output(" + printPatternMatcher.group(2) + ")";
+        	return "System.out.print(" + printPatternMatcher.group(2) + ")\n";
+        } else if (print2PatternMatcher.matches()) {
+        	//matches to "output(" + printPatternMatcher.group(2) + ")\n";
+        	return "System.out.println(" + printPatternMatcher.group(2) + ")\n";
+        } else if (cmdPatternMatcher.matches()) {
+        	//matches "cmd(" + cmdPatternMatcher.group(2) + ")\n";
+        	return "args[" + cmdPatternMatcher.group(1) + "]\n";
+        } else {
+        	throw new FormattingError();
+        }
+        //return null;
     }
 
-    private static String fromLoopStatement(String expression){
+    private static String fromLoopStatement(String expression) throws UndefinedVariable, FormattingError{
 
         System.out.println("START OF FROM:: "+expression);
         expression = expression.trim();
@@ -465,9 +499,10 @@ public class Translator {
             if(!allDigits.matcher(toVal).matches()){
                 if(!variables.contains(toVal)){
                     //TODO: throw undefined variable error
-                    System.out.println("THROW ERROR HERE: to value in from loop is a " +
-                            "variable that has not been defined "+toVal);
-                    return null;
+                	throw new UndefinedVariable();
+                    //System.out.println("THROW ERROR HERE: to value in from loop is a " +
+                     //       "variable that has not been defined "+toVal);
+                    //return null;
                 }
             }
             String plusOrMinus = fromPatternMatcher.group(3);
@@ -497,5 +532,6 @@ public class Translator {
         }
         return null;
     }
+    
 
 }

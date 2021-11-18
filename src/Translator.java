@@ -103,7 +103,6 @@ public class Translator {
                 f.write("*/\n");
                 commentBlock = false;
             }
-            //END
             lineNo++;
         	} catch (Exception e) {
         		System.out.println(e.toString());

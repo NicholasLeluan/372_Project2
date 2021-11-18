@@ -1,0 +1,5 @@
+var x = cmd(1)
+output(10)
+outputs(100)
+output("Hello World")
+outputs("Very long string in here")

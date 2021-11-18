@@ -2,8 +2,10 @@ var x = cmd(0)
 var half = x div 2
 var flag = false
 
-if x greater than 0 then
-    from var i to half increment by 1
+
+
+if x greater than or equal to 2 then
+    from var i = 2 to half increment by 1
         if x mod i equals 0 then
             flag = true
             stop loop now

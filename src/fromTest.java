@@ -9,14 +9,17 @@ if(x > 0){
 for(int i = 0; i < half; i += 1){
 if(x % i == 0){
 flag = true;
-}
+break;}
 }
 if(flag == true){
+System.out.print("not prime");
 
 }else{
+System.out.print("prime");
 }
 
 }else{
+System.out.print("not prime");
 }
 
 }

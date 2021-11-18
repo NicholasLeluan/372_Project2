@@ -1,11 +1,12 @@
 
 public class ConditionalNoMatch extends Exception{
-
-	public ConditionalNoMatch() {
+	int line;
+	public ConditionalNoMatch(int line) {
 		super();
+		this.line = line;
 	}
 	
-	public String toString(int lineNo) {
-		return "Conditionals do not match on line " + lineNo;
+	public String toString() {
+		return "Conditionals do not match on line " + line;
 	}
 }

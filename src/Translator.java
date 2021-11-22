@@ -319,7 +319,7 @@ public class Translator {
      * @param expression
      * @return
      */
-    private static String getClass(String expression){
+    private static String getClass(String expression) throws UndefinedVariable {
         Pattern doublePattern = Pattern.compile("-?(\\d+\\.\\d*)");
         // for expressions that have 2 numbers(either float or int)
         Pattern mathExpression = Pattern.compile("-?(\\w*|\\d+\\.?\\d*) (add|sub|mult|div|mod) -?(\\d+\\.?\\d*|\\S+$)");
@@ -339,6 +339,9 @@ public class Translator {
 
         Pattern arrayExpression = Pattern.compile("array\\((.*)\\)");
         Matcher arrayMatcher = arrayExpression.matcher(expression.trim());
+
+        Pattern singletonExpression = Pattern.compile("(\\S+)");
+        Matcher singletonMatcher = singletonExpression.matcher(expression.trim());
 
 
         //TODO: can probably adapt this pretty easily for strings
@@ -403,6 +406,11 @@ public class Translator {
             }
         }else if(stringMatcher.matches()){
             return "String";
+        }else if(singletonMatcher.matches()){
+            if (variables.contains(expression.trim())){
+                return variableTypes.get(expression.trim());
+            }
+            throw new UndefinedVariable(0);
         }
         System.out.println("FAIL:"+expression);
         return null;

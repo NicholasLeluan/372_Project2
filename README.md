@@ -1,6 +1,6 @@
 # Rage 
 ## Compiling 
-Follow these steps to compile the compiler, the translated .java file, then run:
+Follow these steps to compile the translator and the translated .java file ::
 <ul>
   <li>Compile the translator: <code>javac Translator.java</code></li>
   <li>Run the Translator with the desired .txt Rage program: <code>java Translator [fileName].txt</code>

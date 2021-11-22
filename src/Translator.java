@@ -23,7 +23,7 @@ public class Translator {
     static List<String> keywords = Arrays.asList("var","add","mult","div","mod","true","false","or","not",
                                                 "less than","less than or equal to","greater than","greater than or equal to",
                                                 "equal to","not equal to","if","then","or","or if","end if","end from",
-                                                "to","output","outputs","text","cla");
+                                                "to","output","outputs","text","cla","array");
     static ArrayList<String> variables = new ArrayList<String>();
     static HashMap<String,String> variableTypes = new HashMap<>();
     static List<String> methods = Arrays.asList("cmd","or","not","output","outputs","and","array"); // "built-in" methods of our language

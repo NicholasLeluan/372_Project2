@@ -1,0 +1,7 @@
+var userInput = cmd(0)
+var C = 2 mult 3.14
+C = C mult userInput
+output("The circumference of a circle with radius ")
+output(userInput)
+output(" is ")
+output(C)

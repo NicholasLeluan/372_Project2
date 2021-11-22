@@ -26,7 +26,7 @@ public class Translator {
                                                 "to","output","outputs","text","cla");
     static ArrayList<String> variables = new ArrayList<String>();
     static HashMap<String,String> variableTypes = new HashMap<>();
-    static List<String> methods = Arrays.asList("cmd","or","not","output","outputs","and"); // "built-in" methods of our language
+    static List<String> methods = Arrays.asList("cmd","or","not","output","outputs","and","array"); // "built-in" methods of our language
 
     public static void main(String[] args) throws IOException, FormattingError {
         String className = args[0].substring(0,args[0].length()-4);
@@ -80,7 +80,7 @@ public class Translator {
             }else if(line.trim().equals("or")){
                 f.write("\n}else{\n");
             }
-            else if(line.trim().equals("end if") || line.trim().equals("end from")){
+            else if(line.trim().equals("end if") || line.trim().equals("end from") || line.trim().equals("end for each")){
                 f.write("}\n");
                 if (line.trim().equals("end if")){
                     openIfs -= 1;
@@ -93,6 +93,9 @@ public class Translator {
             }else if(line.equals("stop loop now")){
 
                 f.write("break;");
+            }else if(line.trim().startsWith("for each")){
+                f.write(forEachLoopStatement(line,lineNo));
+                openFroms += 1;
             }
             else if(methodMatcher.matches()){
                 f.write(getMethod(line,lineNo) + ";\n");
@@ -133,7 +136,7 @@ public class Translator {
      * @throws FormattingError 
      * @throws IOException 
      */
-    private static String addVariable(String line,int lineNo) throws FormattingError, DivByZero, VariableAlreadyDefined, UndefinedVariable, MethodNotFound {
+    private static String addVariable(String line,int lineNo) throws FormattingError, DivByZero, VariableAlreadyDefined, UndefinedVariable, MethodNotFound, UseOfKeyword {
         String retVal = "";
 
         Pattern newVarPattern = Pattern.compile("var (.*) = (.*)");
@@ -146,6 +149,9 @@ public class Translator {
             String variable = newVarMatcher.group(1);// the variable name
             if(variables.contains(variable)){
                 throw new VariableAlreadyDefined(lineNo);
+            }
+            if(keywords.contains(variable)){
+                throw new UseOfKeyword(variable, lineNo);
             }
             String rightExpression = expression(newVarMatcher.group(2),lineNo);
             String exprClass = getClass(newVarMatcher.group(2));
@@ -331,6 +337,9 @@ public class Translator {
         Pattern stringExpression = Pattern.compile("(\"(.*)\")");
         Matcher stringMatcher = stringExpression.matcher(expression.trim());
 
+        Pattern arrayExpression = Pattern.compile("array\\((.*)\\)");
+        Matcher arrayMatcher = arrayExpression.matcher(expression.trim());
+
 
         //TODO: can probably adapt this pretty easily for strings
 
@@ -389,6 +398,8 @@ public class Translator {
                 return "int";
             }else if(expression.contains("not(") || expression.contains("or(") ||expression.contains("and(")){
                 return "boolean";
+            }else if(arrayMatcher.matches()){
+                return "int[]";
             }
         }else if(stringMatcher.matches()){
             return "String";
@@ -423,6 +434,8 @@ public class Translator {
         Pattern booleanNotPattern = Pattern.compile("not\\((\\w+)\\)");
         Matcher booleanNot = booleanNotPattern.matcher(expression);
 
+        Pattern arrayPattern = Pattern.compile("array\\((.*)\\)");
+        Matcher arrayMatcher = arrayPattern.matcher(expression);
 
         if (printPatternMatcher.matches()) {
         	return "System.out.print(" + printPatternMatcher.group(1) + ")";
@@ -436,6 +449,9 @@ public class Translator {
             return String.format("%s && %s",booleanAnd.group(1),booleanAnd.group(2));
         }else if(booleanNot.matches()){
             return String.format("!%s",booleanNot.group(1));
+        }else if(arrayMatcher.matches()){
+            System.out.println("HERE IN METHOD");
+            return arrayBuilder(arrayMatcher.group(1));
         }
         else {
         	throw new FormattingError(lineNo);
@@ -449,7 +465,7 @@ public class Translator {
      * @throws UndefinedVariable
      * @throws FormattingError
      */
-    private static String fromLoopStatement(String expression,int lineNo) throws UndefinedVariable, FormattingError, DivByZero, VariableAlreadyDefined, MethodNotFound {
+    private static String fromLoopStatement(String expression,int lineNo) throws UndefinedVariable, FormattingError, DivByZero, VariableAlreadyDefined, MethodNotFound, UseOfKeyword {
         expression = expression.trim();
 
         Pattern fromPattern = Pattern.compile("from (.*) to (.*) (increment|decrement) by (\\d+)");
@@ -496,6 +512,59 @@ public class Translator {
 
         }
         return null;
+    }
+
+    /**
+     * Method that creates the Java string version of a new int array.
+     * ARRAYS CAN ONLY BE INTEGER ARRAYS!
+     * @param contents
+     * @return
+     */
+    private static String arrayBuilder(String contents){
+        try {
+            String retVal = "{";
+            String[] splitS = contents.split(",");
+            for (String n : splitS) {
+                int check = Integer.parseInt(n.trim());
+                retVal += n.trim() + ",";
+            }
+            retVal = retVal.substring(0, retVal.length() - 1);
+            retVal += "}";
+            return retVal;
+        }catch (NumberFormatException e){
+            return null;
+        }
+    }
+
+    /**
+     * Method that creates the for each loop; this loop can only be used on predefined
+     * arrays and uses a variable that has not yet been defined in the program before
+     *
+     * @param line
+     * @param lineNo
+     * @return
+     * @throws MethodNotFound
+     * @throws FormattingError
+     * @throws UndefinedVariable
+     * @throws VariableAlreadyDefined
+     * @throws DivByZero
+     * @throws UseOfKeyword
+     */
+    private static String forEachLoopStatement(String line, int lineNo) throws MethodNotFound, FormattingError, UndefinedVariable, VariableAlreadyDefined, DivByZero, UseOfKeyword {
+
+        Pattern statementPattern = Pattern.compile("for each (.*) in (.*) do");
+        Matcher statementMatcher = statementPattern.matcher(line);
+
+        if(!statementMatcher.matches()){
+            throw new FormattingError(lineNo);
+        }
+        String variable = statementMatcher.group(1);
+        String arrayVar = statementMatcher.group(2);
+        if(!variables.contains(arrayVar) || variables.contains(variable)){
+            throw new UndefinedVariable(lineNo);
+        }
+        String retVal = String.format("for(int %s : %s){",variable,arrayVar);
+        return retVal;
     }
     
 

@@ -1,0 +1,4 @@
+var x = array(1,2,3,4)
+for each c in x do
+outputs(c)
+end from

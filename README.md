@@ -8,7 +8,7 @@ Follow these steps to compile the translator and the translated .java file ::
     <li>Now run the compiled .java file from the previous steps along with any command line arguments!</li>
   <ul><li>for example: <code>java Program1.java 2 5 20</code></li></ul>
   </ul>
-  ## Program Files
+  ### Program Files
   <ul>
   <li><b>Program1.txt</b> - Finds the multiples of the passed in arguments</li>
   <li><b>Program2.txt</b> - Determines whether the passed in int value is prime or not prime</li>
@@ -17,5 +17,6 @@ Follow these steps to compile the translator and the translated .java file ::
   <li><b>Program5.txt</b> - Error program; improperly formatted for loop; uses variable that was not declared</li>
   <li><b>Program6.txt</b> - Error program; no end clause to stop for loop</li>
   <li><b>Program7.txt</b> - Demo Program; demonstrates creating an array and looping through array with the "for each" loop</li>
+  <li><b>Program8.txt</b> - Demo Program; demonstrates using doubles and automatic type inference our langauge translates to</li>
   </ul>
  

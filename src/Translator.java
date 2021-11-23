@@ -20,12 +20,16 @@ public class Translator {
     private static Scanner scanner;
     HashMap<String, Integer> integerVariables = new HashMap<String, Integer>();
     HashMap<String,Data> variableMap = new HashMap<>();
+    // list of keywords that CANNOT be used as variables or anything else
     static List<String> keywords = Arrays.asList("var","add","mult","div","mod","true","false","or","not",
                                                 "less than","less than or equal to","greater than","greater than or equal to",
                                                 "equal to","not equal to","if","then","or","or if","end if","end from",
                                                 "to","output","outputs","text","cla","array");
+    // list of the variables that have been used
     static ArrayList<String> variables = new ArrayList<String>();
+    // map of variables as the key and the values as the class the variable represents
     static HashMap<String,String> variableTypes = new HashMap<>();
+    // methods that are used; also thought of as a keyword
     static List<String> methods = Arrays.asList("cmd","or","not","output","outputs","and","array"); // "built-in" methods of our language
 
     public static void main(String[] args) throws IOException, FormattingError {
@@ -36,11 +40,11 @@ public class Translator {
 
         // Pattern for variable assignment
         Pattern variableAssignmentPattern = Pattern.compile("var (.+)");
-
+        // Pattern that matches with an already existing variable name
         Pattern existingVariableAssignmentPattern = Pattern.compile("^\\w+(?=\\s+=) = (.*)");
-
+        // Pattern to match with methods; i.e. method()
         Pattern methodPattern = Pattern.compile("(.*)\\((.*)\\)");
-
+        // Pattern for the in-line comments
         Pattern inLineCommentPost = Pattern.compile("(.*) [*] (.*)");
 
 
@@ -61,65 +65,83 @@ public class Translator {
             if(commentBlock){
                 f.write("* ");
             }
+            // for an inline comment
             if (line.startsWith("*")){
                 f.write("//");
                 f.write(line +"\n");
                 continue;
             }
+            // matcher for inline comments
             if(postInLineComment.matches()){
                 line = postInLineComment.group(1).trim();
             }
+            // if the line is a variable assignment; both new and old
             if (newVariableAssignment.matches() || oldVariableAssignment.matches()){
                 f.write(addVariable(line,lineNo)+";\n");
+            // conditional statement for the if statemtents
             }else if(line.trim().startsWith("if") || line.trim().startsWith("or if")){
                 boolean startsWithOrIf = line.trim().startsWith("or if");
                 if (!startsWithOrIf){
-                    openIfs+=1;
+                    openIfs+=1; // keeps track of the open if statements; this will be compared to
+                    // another value at the end of compiling; if these values do not match an error is
+                    // thrown
                 }
                 f.write(ifStatement(line,startsWithOrIf,lineNo)+"\n");
             }else if(line.trim().equals("or")){
-                f.write("\n}else{\n");
+                f.write("\n}else{\n"); // or => else in Java
             }
+            // closes the if statement with a bracket
             else if(line.trim().equals("end if") || line.trim().equals("end from") || line.trim().equals("end for each")){
                 f.write("}\n");
                 if (line.trim().equals("end if")){
-                    openIfs -= 1;
+                    openIfs -= 1; // compared value with the 'openIfs' statement at the end of reading the file
                 }else{
-                    openFroms -= 1;
+                    openFroms -= 1; //compared to the openFroms to be compared at end of reading file
                 }
+            // start of a from block
             }else if(line.trim().startsWith("from")){
                 f.write(fromLoopStatement(line,lineNo));
-                openFroms += 1;
+                openFroms += 1; // compare this with 0 at the end of reading lines
+            // break out of a loop
             }else if(line.equals("stop loop now")){
-
                 f.write("break;");
+            // start of a for each loop; used with arrays
             }else if(line.trim().startsWith("for each")){
                 f.write(forEachLoopStatement(line,lineNo));
                 openFroms += 1;
             }
+            // matches with a method that will be called
             else if(methodMatcher.matches()){
                 f.write(getMethod(line,lineNo) + ";\n");
+            // begins a comment header; will trigger a commentBlock flag, which will add a "*" to
+            // the beginning of every write if this flag is false
             }else if(line.equals("start comment")){
                 f.write("/*\n");
                 commentBlock = true;
+            // end of a comment block; switch the flag to stop writing "*" at the beginning
+            // of every line
             }else if(line.startsWith("end comment")){
                 f.write("*/\n");
                 commentBlock = false;
             }
-            lineNo++;
+            lineNo++; // increment the line count
         	} catch (Exception e) {
         		System.out.println(e.toString());
         		return;
-        		
         	}
         }
+        // comparative statement that will throw an error if the values are not 0;
+        // values that are not zero means that a if or a loop statement was not correctly formatted;
+        // most likely because of a lack of end statement
         if (openIfs > 0 || openFroms > 0){
             throw new FormattingError(lineNo);
+        // closing brackets for a successful compiled file
         }else{
             f.write("\n}\n");
             f.write("}");
             f.close();
         }
+        // SUCCESS MESSAGE
         System.out.println("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         String successMessage = String.format(
                 "| SUCCESS! File has been successfully translated! \n| Run ```javac %s.java``` to compile the file \n" +
@@ -138,20 +160,20 @@ public class Translator {
      */
     private static String addVariable(String line,int lineNo) throws FormattingError, DivByZero, VariableAlreadyDefined, UndefinedVariable, MethodNotFound, UseOfKeyword {
         String retVal = "";
-
+        // pattern for if a new variable is being created
         Pattern newVarPattern = Pattern.compile("var (.*) = (.*)");
         Matcher newVarMatcher = newVarPattern.matcher(line);
-
+        // pattern for an existing variable to be signed to new value
         Pattern varAssignmentPattern = Pattern.compile("(.*) = (.*)");
         Matcher varAssignmentMatcher = varAssignmentPattern.matcher(line);
 
         if(newVarMatcher.matches()){
             String variable = newVarMatcher.group(1);// the variable name
             if(variables.contains(variable)){
-                throw new VariableAlreadyDefined(lineNo);
+                throw new VariableAlreadyDefined(lineNo); // variable has already been defined
             }
             if(keywords.contains(variable)){
-                throw new UseOfKeyword(variable, lineNo);
+                throw new UseOfKeyword(variable, lineNo); // variable is a protected keyword
             }
             String rightExpression = expression(newVarMatcher.group(2),lineNo);
             String exprClass = getClass(newVarMatcher.group(2));
@@ -161,10 +183,10 @@ public class Translator {
         }else if(varAssignmentMatcher.matches()){
             String variable = varAssignmentMatcher.group(1);
             if(!variables.contains(variable)){
-                throw new UndefinedVariable(lineNo);
+                throw new UndefinedVariable(lineNo); // variable was NOT defined; thus cannot be redefined
             }
             String rightExpression = expression(varAssignmentMatcher.group(2),lineNo);
-            retVal = String.format("%s = %s",variable,rightExpression);
+            retVal = String.format("%s = %s",variable,rightExpression); // return value
         }
         return retVal;
 
@@ -180,13 +202,14 @@ public class Translator {
      * @throws ConditionalNoMatch 
      */
     private static String ifStatement(String line, boolean orIf,int lineNo) throws FormattingError, ConditionalNoMatch, DivByZero, MethodNotFound {
-        String retVal = "";
-        //String retVal = "if ("; // start
+        String retVal = ""; // value to add to
+        // is it an "or if" statement?
         if (orIf){
             retVal += "\n}else if (";
         }else{
             retVal += "if(";
         }
+        // this pattern is used to grab the variable/expression used in the if statement
         Pattern extractConditional = Pattern.compile("(if|or if) (.*) then");
         Matcher formatCheck = extractConditional.matcher(line.trim());
         if(formatCheck.matches()){
@@ -260,27 +283,28 @@ public class Translator {
      */
     private static String expression(String expr,int lineNo) throws
             FormattingError, DivByZero, MethodNotFound {
+        // ADDITION
         Pattern addPattern = Pattern.compile("(.*) add (.*)");
         Matcher addPatternMatcher = addPattern.matcher(expr);
-
+        // SUBTRACTION
         Pattern subPattern = Pattern.compile("(.*) sub (.*)");
         Matcher subPatternMatcher = subPattern.matcher(expr);
-
+        // MULTIPLICATION
         Pattern multPattern = Pattern.compile("(.*) mult (.*)");
         Matcher multPatternMatcher = multPattern.matcher(expr);
-
+        // DIVIDE
         Pattern divPattern = Pattern.compile("(.*) div (.*)");
         Matcher divPatternMatcher = divPattern.matcher(expr);
-
+        // MODULOUS
         Pattern modPattern = Pattern.compile("(.*) mod (.*)");
         Matcher modPatternMatcher = modPattern.matcher(expr);
-
+        // METHOD MATCHER
         Pattern methodPattern = Pattern.compile("(.*)\\((.*)\\)");
         Matcher methodMatcher = methodPattern.matcher(expr);
-
+        // STRING LITERAL
         Pattern stringLiteralPattern = Pattern.compile("\"(.*)\"");
         Matcher stringMatcher = stringLiteralPattern.matcher(expr);
-
+        // SINGLETON VALUE; grabs whatever is left
         Pattern singletonPattern = Pattern.compile("(.*)");
         Matcher singletonPatternMatcher = singletonPattern.matcher(expr);
 
@@ -294,7 +318,7 @@ public class Translator {
         }else if(divPatternMatcher.matches()){
             String denom = divPatternMatcher.group(2).trim();
             if(denom.equals("0")){
-                throw new DivByZero(lineNo);
+                throw new DivByZero(lineNo); // ig the denominator is zero; handle here so Java doesnt cry
             }
             return String.format("%s / %s",divPatternMatcher.group(1),divPatternMatcher.group(2));
         }else if(modPatternMatcher.matches()){
@@ -308,7 +332,7 @@ public class Translator {
         else if(singletonPatternMatcher.matches()){
             return String.format("%s",singletonPatternMatcher.group(1));
         }else if(stringMatcher.matches()){
-            System.out.println("FOUND A STRING::" + expr);
+            System.out.println("FOUND A STRING::" + expr); // I think this is deadcode
         }
         return null;
     }
@@ -330,21 +354,18 @@ public class Translator {
         // for single digits
         Pattern singletonNumExpression = Pattern.compile("(\\d+\\.?\\d*)");
         Matcher singletonNumMatcher = singletonNumExpression.matcher(expression.trim());
-
+        // for methods
         Pattern methodExpression = Pattern.compile("(.*)\\((.*)\\)");
         Matcher methodExpressionMatcher = methodExpression.matcher(expression.trim());
-
+        // for a string expression
         Pattern stringExpression = Pattern.compile("(\"(.*)\")");
         Matcher stringMatcher = stringExpression.matcher(expression.trim());
-
+        // for array()
         Pattern arrayExpression = Pattern.compile("array\\((.*)\\)");
         Matcher arrayMatcher = arrayExpression.matcher(expression.trim());
-
+        // for a Singleton expression, this gets the first word only
         Pattern singletonExpression = Pattern.compile("(\\S+)");
         Matcher singletonMatcher = singletonExpression.matcher(expression.trim());
-
-
-        //TODO: can probably adapt this pretty easily for strings
 
         if(mathMatcher.matches()) {
             String var1 = mathMatcher.group(1);
@@ -412,7 +433,7 @@ public class Translator {
             }
             throw new UndefinedVariable(0);
         }
-        System.out.println("FAIL:"+expression);
+        System.out.println("FAIL:"+expression); // should not get here, this is debug
         return null;
     }
 
@@ -424,27 +445,27 @@ public class Translator {
      * @throws FormattingError 
      */
     private static String getMethod(String expression,int lineNo) throws FormattingError{
+        // OUTPUT
         Pattern printPattern = Pattern.compile("output\\((\"(.*)\"|\\w+)\\)");
         Matcher printPatternMatcher = printPattern.matcher(expression);
-
+        // OUTPUTS
         Pattern print2Pattern = Pattern.compile("outputs\\((\"(.*)\"|\\w+)\\)");
         Matcher print2PatternMatcher = print2Pattern.matcher(expression);
-        
+        // COMMAND LINE
         Pattern cmdPattern = Pattern.compile("cmd\\((\\d)\\)");
         Matcher cmdPatternMatcher = cmdPattern.matcher(expression);
-
+        // OR CONDITIONAL
         Pattern booleanOrPattern = Pattern.compile("or\\((\\w+),(\\w+)\\)");
         Matcher booleanOr = booleanOrPattern.matcher(expression);
-
+        // AND CONDITIONAL
         Pattern booleanAndPattern = Pattern.compile("and\\((\\w+),(\\w+)\\)");
         Matcher booleanAnd = booleanAndPattern.matcher(expression);
-
+        // NOT CONDITIONAL
         Pattern booleanNotPattern = Pattern.compile("not\\((\\w+)\\)");
         Matcher booleanNot = booleanNotPattern.matcher(expression);
-
+        // ARRAY method
         Pattern arrayPattern = Pattern.compile("array\\((.*)\\)");
         Matcher arrayMatcher = arrayPattern.matcher(expression);
-
         if (printPatternMatcher.matches()) {
         	return "System.out.print(" + printPatternMatcher.group(1) + ")";
         } else if (print2PatternMatcher.matches()) {
@@ -458,7 +479,6 @@ public class Translator {
         }else if(booleanNot.matches()){
             return String.format("!%s",booleanNot.group(1));
         }else if(arrayMatcher.matches()){
-            System.out.println("HERE IN METHOD");
             return arrayBuilder(arrayMatcher.group(1));
         }
         else {
@@ -475,16 +495,16 @@ public class Translator {
      */
     private static String fromLoopStatement(String expression,int lineNo) throws UndefinedVariable, FormattingError, DivByZero, VariableAlreadyDefined, MethodNotFound, UseOfKeyword {
         expression = expression.trim();
-
+        // pattern for a FROM loop
         Pattern fromPattern = Pattern.compile("from (.*) to (.*) (increment|decrement) by (\\d+)");
         Matcher fromPatternMatcher = fromPattern.matcher(expression);
-
+        // Extracts a predefined variable from the loop expression
         Pattern variablePredefinedExtractor = Pattern.compile("^\\w+(?=\\s+=) = (.*)");
-
+        // extracts a newly defined variable from the loop expression
         Pattern variableNewExtractor = Pattern.compile("(int|double) (.*) = (.*)");
-
+        // used to see if a string contains only numbers
         Pattern allDigits = Pattern.compile("[0-9]+");
-        String variable = "NULL";
+        String variable = "NULL"; // begin; this should be changed
         if(fromPatternMatcher.matches()){
             String varAssignment = addVariable(fromPatternMatcher.group(1),lineNo);
             String toVal = fromPatternMatcher.group(2);
@@ -533,7 +553,7 @@ public class Translator {
             String retVal = "{";
             String[] splitS = contents.split(",");
             for (String n : splitS) {
-                int check = Integer.parseInt(n.trim());
+                int check = Integer.parseInt(n.trim()); // if the element is not a number; this will error
                 retVal += n.trim() + ",";
             }
             retVal = retVal.substring(0, retVal.length() - 1);
@@ -559,7 +579,7 @@ public class Translator {
      * @throws UseOfKeyword
      */
     private static String forEachLoopStatement(String line, int lineNo) throws MethodNotFound, FormattingError, UndefinedVariable, VariableAlreadyDefined, DivByZero, UseOfKeyword {
-
+        // Matches for the for each loop; used to determine correct formatting
         Pattern statementPattern = Pattern.compile("for each (.*) in (.*) do");
         Matcher statementMatcher = statementPattern.matcher(line);
 

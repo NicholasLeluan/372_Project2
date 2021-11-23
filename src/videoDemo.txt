@@ -1,0 +1,12 @@
+var myArray = array(9,8,7,6,100)
+
+var pi = 3.14
+var x = 2
+var pi2 = pi mult x
+var answer = 0.00
+
+for each r in myArray do
+answer = pi2 mult r
+outputs(answer)
+end for each
+
